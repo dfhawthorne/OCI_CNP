@@ -1,0 +1,145 @@
+---
+# ------------------------------------------------------------------------------
+# Demonstrate mastery in applying EndPoints to a Networking Architecture
+# ======================================================================
+#
+# Uses two (2) compartments:
+# 1. mastadon_compartment
+# 2. Sandbox
+#
+# The following gateways are:
+# 1. Internet Gateway from mastadon_compartment
+# 2. NAT Gateway from mastadon_compartment
+# 3. DRG from mastadon_compartment
+# 4. LPG between mastadon_compartment and Sandbox
+# 5. Services gateway from mastadon_compartment
+#
+# The following compute instances are created:
+# 1. public01 in mastadon_compartment
+# 2. private01 in mastadon_compartment
+# 3. private02 in Sandbox
+# ------------------------------------------------------------------------------
+
+- hosts: localhost
+  vars:
+    OCI_CLI_TENANCY:    "ocid1.tenancy.oc1..aaaaaaaa7ilqdzmkbqduujc3tt6zrl2n2ytcughcjoidozg4memj2k4cm7na"
+  tasks:
+  - name:               "Get Required Compartment Facts"
+    oracle.oci.oci_identity_compartment_facts:
+      parent_compartment_id:
+                        "{{ OCI_CLI_TENANCY }}"
+      name:             "{{ item }}"
+    register:           required_compartment
+    loop:
+      -                 "mastadon_compartment"
+      -                 "Sandbox"
+  
+  - name:               "Display Required Compartment Facts"
+    ansible.builtin.debug:
+      var:              required_compartment
+      verbosity:        1
+    when:
+      -                 required_compartment is defined
+  
+  - name:               "Save Compartment and VCN IDs for Compartments with a VCN"
+    ansible.builtin.set_fact:
+      mastadon_comp_id: "{{ required_compartment.results[0].compartments[0].id }}"
+      mastadon_vcn_id:  "ocid1.vcn.oc1.ap-sydney-1.amaaaaaa63mv4jya75cfieoatbehnc3rn4q6abdcjmwxa5pdqddhic464n4q"
+      sandbox_comp_id:  "{{ required_compartment.results[1].compartments[0].id }}"
+      sandbox_vcn_id:   "ocid1.vcn.oc1.ap-sydney-1.amaaaaaa63mv4jyaxs7lsdt2jqb5szggxu2mcm2yqr2zufmi5pqh6jwzfqlq"
+  
+  - name:               "Parameters for My VCNs"
+    ansible.builtin.set_fact:
+      my_vcns:
+        - cidr_blocks:
+            -           "10.1.0.0/16"
+          comp_id:      "{{ mastadon_comp_id }}"
+          disp_name:    "Mastadon_Network"
+          dns_label:    "mastadon"
+          vcn_id:       "{{ mastadon_vcn_id }}"
+        - cidr_blocks:
+            -           "10.0.0.0/16"
+          comp_id:      "{{ sandbox_comp_id }}"
+          disp_name:    "sandbox-vcn"
+          dns_label:    null
+          vcn_id:       "{{ sandbox_vcn_id }}"
+  
+  - name:               "Create My VCNs"
+    oracle.oci.oci_network_vcn:
+      cidr_blocks:      "{{ item.cidr_blocks }}"
+      compartment_id:   "{{ item.comp_id }}"
+      display_name:     "{{ item.disp_name }}"
+      dns_label:        "{{ item.dns_label }}"
+      force_create:     no
+      state:            present
+      wait:             yes
+    loop:               "{{ my_vcns }}"
+    when:               item.vcn_id is not defined
+
+  - name:               "Get Subnet data"
+    oracle.oci.oci_network_subnet_facts:
+      compartment_id:   "{{ item.comp_id }}"
+      vcn_id:           "{{ item.vcn_id }}"
+    register:           subnet
+    loop:               "{{ my_vcns }}"
+  
+  - name:               "Display Subnet Data"
+    ansible.builtin.debug:
+      var:              subnet
+      verbosity:        1
+    when:
+      -                 subnet is defined
+  
+  # ----------------------------------------------------------------------------
+  # Create Endpoints
+  # ----------------------------------------------------------------------------
+
+  - name:               "Create an Autonomous DB in Sandbox Compartment"
+    oracle.oci.oci_database_autonomous_database:
+      admin_password:   "pTr817m-H?Yc"
+      compartment_id:   "{{ sandbox_comp_id }}"
+      compute_count:    2
+      compute_model:    "ECPU"
+      data_storage_size_in_gbs:
+                        20
+      db_name:          "sandbox01"
+      db_version:       "19c"
+      display_name:     "Sandbox_Autonomous_DB_01"
+      force_create:     no
+      is_auto_scaling_enabled:
+                        false
+      is_auto_scaling_for_storage_enabled:
+                        false
+      is_data_guard_enabled:
+                        false
+      is_dedicated:     false
+      is_free_tier:     true
+      is_local_data_guard_enabled:
+                        false
+      is_mtls_connection_required:
+                        true
+      region:           "ap-sydney-1"
+      state:            present
+      tenancy:          "{{ OCI_CLI_TENANCY }}"
+      wait:             yes
+    register:           sandbox_db_01
+    failed_when:        False
+  
+  - name:               "Display results of Creation of an Autonomous DB in Sandbox Compartment"
+    ansible.builtin.debug:
+      var:              sandbox_db_01
+    when:
+      -                 sandbox_db_01 is defined
+
+  - name:               "List all Autonomous Databases in Sandbox compartment"
+    oracle.oci.oci_database_autonomous_database_facts:
+      compartment_id:   "{{ sandbox_comp_id }}"
+    register:           sandbox_auto_db
+  
+  - name:               "Display Details about Sandbox Auto DB" 
+    ansible.builtin.debug:
+      var:              sandbox_auto_db
+    when:
+      -                 sandbox_auto_db is defined
+        
+...
