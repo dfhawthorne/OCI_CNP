@@ -29,8 +29,9 @@ provider "oci" {
 # Sandbox Compartment
 # ------------------------------------------------------------------------------
 
-data "oci_identity_compartments" "sandbox_comp" {
+resource "oci_identity_compartment" "sandbox_comp" {
   compartment_id  = var.tenancy_ocid
+  description     = "Sandbox"
   name            = "Sandbox"
 }
 
@@ -39,7 +40,7 @@ data "oci_identity_availability_domains" "all_availability_domains" {
 }
 
 locals {
-  sandbox_comp_ocid = data.oci_identity_compartments.sandbox_comp.id
+  sandbox_comp_ocid = oci_identity_compartment.sandbox_comp.id
   ad_ocid           = data.oci_identity_availability_domains.all_availability_domains.id
 }
 
@@ -50,7 +51,7 @@ locals {
 resource "oci_core_vcn" "sandbox_vcn" {
   compartment_id  = local.sandbox_comp_ocid
   cidr_blocks     = ["10.0.0.0/16"]
-  display_name    = "Sandbox_VCN"
+  display_name    = "sandbox-vcn"
   dns_label       = "sandbox"
 }
 
