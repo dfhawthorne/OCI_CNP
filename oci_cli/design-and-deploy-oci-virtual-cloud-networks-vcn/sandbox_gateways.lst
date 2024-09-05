@@ -1,0 +1,77 @@
+{
+  "data": [
+    {
+      "compartment-id": "ocid1.compartment.oc1..aaaaaaaamoo6uz2qmix2adls2cgoqxxhdt4wuam3wbcrw6co6z4osweos6da",
+      "defined-tags": {
+        "Oracle-Tags": {
+          "CreatedBy": "default/dhawthorne@acm.org",
+          "CreatedOn": "2023-12-24T08:19:13.992Z"
+        }
+      },
+      "display-name": "Internet gateway-sandbox-vcn",
+      "freeform-tags": {
+        "VCN": "VCN-2023-12-24T08:16:37"
+      },
+      "id": "ocid1.internetgateway.oc1.ap-sydney-1.aaaaaaaarzg3siwkwjek4o6mrdyzjuyyx2qbzgorhd2tmlni2app3436qrsq",
+      "is-enabled": true,
+      "lifecycle-state": "AVAILABLE",
+      "route-table-id": null,
+      "time-created": "2023-12-24T08:19:14.040000+00:00",
+      "vcn-id": "ocid1.vcn.oc1.ap-sydney-1.amaaaaaa63mv4jyaxs7lsdt2jqb5szggxu2mcm2yqr2zufmi5pqh6jwzfqlq"
+    }
+  ]
+}
+{
+  "data": [
+    {
+      "block-traffic": false,
+      "compartment-id": "ocid1.compartment.oc1..aaaaaaaamoo6uz2qmix2adls2cgoqxxhdt4wuam3wbcrw6co6z4osweos6da",
+      "defined-tags": {
+        "Oracle-Tags": {
+          "CreatedBy": "default/dhawthorne@acm.org",
+          "CreatedOn": "2023-12-24T08:19:14.253Z"
+        }
+      },
+      "display-name": "NAT gateway-sandbox-vcn",
+      "freeform-tags": {
+        "VCN": "VCN-2023-12-24T08:16:37"
+      },
+      "id": "ocid1.natgateway.oc1.ap-sydney-1.aaaaaaaamyfsej6o7hozpgvapa3mky4xuywvziynmvdx43ry5nb56fx5o6oq",
+      "lifecycle-state": "AVAILABLE",
+      "nat-ip": "150.230.8.141",
+      "public-ip-id": "ocid1.publicip.oc1.ap-sydney-1.aaaaaaaattci7k6xzhzyouspehb5rrcqye2qshvv4vuqpdi5hku7kkmwwl6a",
+      "route-table-id": null,
+      "time-created": "2023-12-24T08:19:14.621000+00:00",
+      "vcn-id": "ocid1.vcn.oc1.ap-sydney-1.amaaaaaa63mv4jyaxs7lsdt2jqb5szggxu2mcm2yqr2zufmi5pqh6jwzfqlq"
+    }
+  ]
+}
+{
+  "data": [
+    {
+      "block-traffic": false,
+      "compartment-id": "ocid1.compartment.oc1..aaaaaaaamoo6uz2qmix2adls2cgoqxxhdt4wuam3wbcrw6co6z4osweos6da",
+      "defined-tags": {
+        "Oracle-Tags": {
+          "CreatedBy": "default/dhawthorne@acm.org",
+          "CreatedOn": "2023-12-24T08:19:14.080Z"
+        }
+      },
+      "display-name": "Service gateway-sandbox-vcn",
+      "freeform-tags": {
+        "VCN": "VCN-2023-12-24T08:16:37"
+      },
+      "id": "ocid1.servicegateway.oc1.ap-sydney-1.aaaaaaaabbw64mq222uwetfrdhowwtnnzlkw5g7ypv5ligsk72rvez6q44la",
+      "lifecycle-state": "AVAILABLE",
+      "route-table-id": null,
+      "services": [
+        {
+          "service-id": "ocid1.service.oc1.ap-sydney-1.aaaaaaaaar6xfo4rtfjgv2mmjvo7u77zyr4uyqkc764f2t2jxwwayrjhsjyq",
+          "service-name": "All SYD Services In Oracle Services Network"
+        }
+      ],
+      "time-created": "2023-12-24T08:19:14.510000+00:00",
+      "vcn-id": "ocid1.vcn.oc1.ap-sydney-1.amaaaaaa63mv4jyaxs7lsdt2jqb5szggxu2mcm2yqr2zufmi5pqh6jwzfqlq"
+    }
+  ]
+}

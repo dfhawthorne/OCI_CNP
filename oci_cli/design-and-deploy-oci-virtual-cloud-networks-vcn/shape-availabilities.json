@@ -1,0 +1,23 @@
+[
+  {
+    "faultDomain": "FAULT-DOMAIN-1",
+    "instanceShape": "VM.Standard.E2.1.Micro",
+    "instanceShapeConfig": {
+      "ocpus": 1
+    }
+  },
+  {
+    "faultDomain": "FAULT-DOMAIN-2",
+    "instanceShape": "VM.Standard.E2.1.Micro",
+    "instanceShapeConfig": {
+      "ocpus": 1
+    }
+  },
+  {
+    "faultDomain": "FAULT-DOMAIN-3",
+    "instanceShape": "VM.Standard.E2.1.Micro",
+    "instanceShapeConfig": {
+      "ocpus": 1
+    }
+  }
+]

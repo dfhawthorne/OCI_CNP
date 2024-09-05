@@ -45,6 +45,35 @@ locals {
 }
 
 # -------------------------------------------------------------------------------
+# Sandbox Identity Domain
+# -------------------------------------------------------------------------------
+
+resource "oci_identity_domain" "sandbox_domain" {
+    compartment_id              = local.sandbox_comp_ocid
+    description                 = "Identity domain for Sandbox"
+    display_name                = "Sandbox-Domain"
+    home_region                 = var.region
+    license_type                = "free"
+    admin_email                 = var.sandbox_domain_admin_email
+    admin_first_name            = var.sandbox_domain_admin_first_name
+    admin_last_name             = var.sandbox_domain_admin_last_name
+    admin_user_name             = "sandbox_admin"
+    is_notification_bypassed    = false
+    is_primary_email_required   = false
+}
+
+# -------------------------------------------------------------------------------
+# Sandbox User
+# -------------------------------------------------------------------------------
+
+resource "oci_identity_user" "sandbox_user" {
+    compartment_id              = local.sandbox_comp_ocid
+    description                 = "Common user for Sandbox"
+    name                        = "sandbox_user"
+    email                       = var.sandbox_user_email
+}
+
+# -------------------------------------------------------------------------------
 # VCN
 # -------------------------------------------------------------------------------
 
