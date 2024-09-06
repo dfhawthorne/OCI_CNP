@@ -1,0 +1,1 @@
+/home/mylearn/OCI_CNP/common/variables.tf
