@@ -25,3 +25,6 @@ variable "sandbox_domain_admin_last_name" {
 variable "sandbox_user_email" {
     type    = string
     }
+variable "compute_shape" {
+    type    = string
+    }

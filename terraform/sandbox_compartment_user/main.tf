@@ -29,76 +29,82 @@ provider "oci" {
 # Sandbox Compartment
 # ------------------------------------------------------------------------------
 
-data "oci_identity_compartment" "sandbox_comp" {
-  compartment_id  = var.tenancy_ocid
-  description     = "Sandbox"
-  name            = "Sandbox"
-}
+# Sandbox Compartment
 
-data "oci_identity_availability_domains" "all_availability_domains" {
-  compartment_id  = var.tenancy_ocid
+data "oci_identity_compartments" "sandbox" {
+    compartment_id          = var.tenancy_ocid
+    name                    = "Sandbox"
 }
 
 locals {
-  sandbox_comp_ocid = data.oci_identity_compartment.sandbox_comp.id
-  ad_name           = data.oci_identity_availability_domains.all_availability_domains.name
+    compartment_id          = data.oci_identity_compartments.sandbox.compartments[0].id
 }
 
-# -------------------------------------------------------------------------------
-# VCN
-# -------------------------------------------------------------------------------
+# Availability Domain
 
-data "oci_core_vcn" "sandbox_vcn" {
-  compartment_id                = local.sandbox_comp_ocid
-  display_name                  = "sandbox-vcn"
+data "oci_identity_availability_domains" "ads" {
+    compartment_id              = var.tenancy_ocid
 }
 
-# -------------------------------------------------------------------------------
-# Subnets
-# -------------------------------------------------------------------------------
-
-data "oci_core_subnet" "sandbox_public_subnet" {
-  compartment_id                = local.sandbox_comp_ocid
-  vcn_id                        = data.oci_core_vcn.sandbox_vcn.id
-  display_name	                = "public subnet-sandbox-vcn"
+locals {
+    ad1                         = data.oci_identity_availability_domains.ads.availability_domains[0].name
 }
 
-data "oci_core_subnet" "sandbox_private_subnet" {
-  compartment_id                = local.sandbox_comp_ocid
-  vcn_id                        = data.oci_core_vcn.sandbox_vcn.id
-  display_name	                = "private subnet-sandbox-vcn"
+# Sandbox VCN
+
+data "oci_core_vcns" "sandbox" {
+    compartment_id          = local.compartment_id
+    display_name            = "Sandbox"
 }
 
-# -------------------------------------------------------------------------------
-# Compute instances
-# -------------------------------------------------------------------------------
+locals {
+    vcn_id                  = data.oci_core_vcns.sandbox.virtual_networks[0].id
+}
 
-data "oci_core_images" "centos_8_images" {
-    compartment_id              = local.sandbox_comp_ocid
-    operating_system            = "CentOS"
-    operating_system_version    = "8 Stream"
-    shape                       = "VM.Standard.E2.1.Micro"
-    state                       = "AVAILABLE"
-    sort_by                     = "TIMECREATED"
-    sort_order                  = "DESC"
+# Sandbox Public Subnet
+
+data "oci_core_subnets" "sandbox" {
+    compartment_id          = local.compartment_id
+    display_name            = "public subnet-Sandbox"
+    vcn_id                  = local.vcn_id
+}
+
+locals {
+    public_subnet_id        = data.oci_core_subnets.sandbox.subnets[0].id
+}
+
+# OL8 Compute Images
+
+data "oci_core_images" "ol8_images" {
+    compartment_id          = local.compartment_id
+    operating_system        = "Oracle Linux"
+    operating_system_version = "8"
+    shape                   = var.compute_shape
+    state                   = "AVAILABLE"
+    sort_by                 = "TIMECREATED"
+    sort_order              = "DESC"
+}
+
+locals {
+    latest_ol8_image_id     = data.oci_core_images.ol8_images.images[0].id
 }
 
 resource "oci_core_instance" "sandbox_vm01" {
-  availability_domain           = local.ad_name
-  compartment_id                = local.sandbox_comp_ocid
-  shape                         = "VM.Standard.E2.1.Micro"
+  availability_domain           = local.ad1
+  compartment_id                = local.compartment_id
+  shape                         = var.compute_shape
   shape_config                  {
     ocpus                       = 1
     memory_in_gbs               = 6
     }
   create_vnic_details           {
     assign_public_ip            = true
-    subnet_id                   = data.oci_core_subnet.sandbox_public_subnet.id
+    subnet_id                   = local.public_subnet_id
     hostname_label              = "vm01"
   }
   display_name                  = "Sandbox public VM"
   source_details                {
-    source_id                   = data.oci_core_images.centos_8_images.id
+    source_id                   = local.latest_ol8_image_id
     source_type                 = "image"
   }
 }
