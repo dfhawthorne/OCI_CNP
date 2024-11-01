@@ -8,7 +8,7 @@ For this lab, the tenancy needs to be subscribed to the US East (Ashburn) and UK
 
 ### Remote VCN Peering
 
-Remote VCN is the process of connecting two VCNs, typically but not required to be in different regions. Peering allows VCNs' resources to communicate using private IP addresses/
+Remote VCN is the process of connecting two VCNs, typically but not required to be in different regions. Peering allows VCNs' resources to communicate using private IP addresses.
 
 ### Dynamic Routing Gateway
 
@@ -32,4 +32,3 @@ In this lab, you will:
 1. Create Remote Peering Connection attachments and establish the connection between the two DRGs.
 1. Add Route Rules.
 1. Add Security Rules.
-

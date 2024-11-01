@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 # OCI CNP Lab 02:
-# Configure Local Virtual Cloud Network (VCN) Peering
+# Networking - Virtual Cloud Network: Configure Remote VCN Peering
 # ------------------------------------------------------------------------------
 
 terraform {
