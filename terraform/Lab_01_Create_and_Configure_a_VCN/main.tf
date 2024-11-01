@@ -16,11 +16,11 @@ terraform {
 # ------------------------------------------------------------------------------
 
 provider "oci" {
-  tenancy_ocid     = var.tenancy_ocid
-  user_ocid        = var.user_ocid
-  fingerprint      = var.fingerprint
-  private_key_path = var.private_key_path
-  region           = var.region
+  tenancy_ocid     = var.provider_details.tenancy_ocid
+  user_ocid        = var.provider_details.user_ocid
+  fingerprint      = var.provider_details.fingerprint
+  private_key_path = var.provider_details.private_key_path
+  region           = var.provider_details.region
 }
 
 # Virtual Cloud Network resource block
