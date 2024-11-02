@@ -16,4 +16,3 @@ In this lab, you'll:
 1. Create custom private zones.
 1. Configure a VCN resolver
 1. Configure the VCN resolver to add the other private view
-
