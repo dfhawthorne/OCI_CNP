@@ -15,3 +15,8 @@ output "public_key_pem" {
     value                       = tls_private_key.ocinplab05key.public_key_pem
     sensitive                   = false
 }
+
+output "public_ip" {
+    value                       = oci_core_instance.IAD-NP-LAB05-VM-01.public_ip
+    sensitive                   = false
+}

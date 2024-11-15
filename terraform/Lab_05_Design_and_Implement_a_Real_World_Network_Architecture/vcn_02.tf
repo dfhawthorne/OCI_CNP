@@ -10,28 +10,28 @@
 # Virtual Cloud Network resource block
 # ------------------------------------------------------------------------------
 
-resource "oci_core_vcn" "IAD-NP-LAB05-1-VCN02" {
+resource "oci_core_vcn" "IAD-NP-LAB05-VCN-02" {
     compartment_id              = var.compartment_id
-    display_name                = "IAD-NP-LAB05-1-VCN02"
+    display_name                = "IAD-NP-LAB05-VCN-02"
     cidr_blocks                 = ["172.0.0.0/16"]
-    dns_label                   = "iadlab051VCN02"
+    dns_label                   = "iadlab05vcn02"
 }
 
 # ------------------------------------------------------------------------------
 # Attach Gateways to VCN
 # ------------------------------------------------------------------------------
 
-resource "oci_core_internet_gateway" "IAD-NP-LAB05-1-IG-02" {
+resource "oci_core_internet_gateway" "IAD-NP-LAB05-IG-02" {
     compartment_id              = var.compartment_id
-    display_name                = "LPG gateway-IAD-NP-LAB05-1-VCN02"
-    vcn_id                      = oci_core_vcn.IAD-NP-LAB05-1-VCN02.id
+    display_name                = "LPG gateway-IAD-NP-LAB05-VCN-02"
+    vcn_id                      = oci_core_vcn.IAD-NP-LAB05-VCN-02.id
 }
 
-resource "oci_core_local_peering_gateway" "IAD-NP-LAB05-1-LPG-02" {
+resource "oci_core_local_peering_gateway" "IAD-NP-LAB05-LPG-02" {
     compartment_id              = var.compartment_id
-    display_name                = "LPG gateway-IAD-NP-LAB05-1-VCN02"
-    vcn_id                      = oci_core_vcn.IAD-NP-LAB05-1-VCN02.id
-    peer_id                     = oci_core_local_peering_gateway.IAD-NP-LAB05-1-LPG-01.id
+    display_name                = "LPG gateway-IAD-NP-LAB05-VCN-02"
+    vcn_id                      = oci_core_vcn.IAD-NP-LAB05-VCN-02.id
+    peer_id                     = oci_core_local_peering_gateway.IAD-NP-LAB05-LPG-01.id
 }
 
 # ------------------------------------------------------------------------------
@@ -39,9 +39,9 @@ resource "oci_core_local_peering_gateway" "IAD-NP-LAB05-1-LPG-02" {
 # ------------------------------------------------------------------------------
 
 resource "oci_core_default_dhcp_options" "DHCP-Options-VCN-02" {
-    manage_default_resource_id  = oci_core_vcn.IAD-NP-LAB05-1-VCN02.default_dhcp_options_id
+    manage_default_resource_id  = oci_core_vcn.IAD-NP-LAB05-VCN-02.default_dhcp_options_id
     compartment_id              = var.compartment_id
-    display_name                = "DHCP Options for IAD-NP-LAB05-1-VCN02"
+    display_name                = "DHCP Options for IAD-NP-LAB05-VCN-02"
     domain_name_type            = "CUSTOM_DOMAIN"
     options {
         custom_dns_servers      = [
@@ -51,7 +51,7 @@ resource "oci_core_default_dhcp_options" "DHCP-Options-VCN-02" {
     }
     options {
         search_domain_names     = [
-            "iadlab051VCN02.oraclevcn.com",
+            "iadlab05vcn02.oraclevcn.com",
         ]
         type = "SearchDomain"
     }
@@ -61,20 +61,20 @@ resource "oci_core_default_dhcp_options" "DHCP-Options-VCN-02" {
 # Route tables
 # ------------------------------------------------------------------------------
 
-resource "oci_core_default_route_table" "IAD-NP-LAB05-1-VCN-02-default-route-table" {
+resource "oci_core_default_route_table" "IAD-NP-LAB05-VCN-02-default-route-table" {
     compartment_id              = var.compartment_id
-    display_name                = "default route table for IAD-NP-LAB05-1-VCN02"
+    display_name                = "default route table for IAD-NP-LAB05-VCN-02"
     route_rules {
         destination             = "0.0.0.0/0"
         destination_type        = "CIDR_BLOCK"
-        network_entity_id       = oci_core_internet_gateway.IAD-NP-LAB05-1-IG-02.id
+        network_entity_id       = oci_core_internet_gateway.IAD-NP-LAB05-IG-02.id
     }
     route_rules {
         destination             = "10.0.0.0/16"
         destination_type        = "CIDR_BLOCK"
-        network_entity_id       = oci_core_local_peering_gateway.IAD-NP-LAB05-1-LPG-02.id
+        network_entity_id       = oci_core_local_peering_gateway.IAD-NP-LAB05-LPG-02.id
     }
-    manage_default_resource_id  = oci_core_vcn.IAD-NP-LAB05-1-VCN02.default_route_table_id
+    manage_default_resource_id  = oci_core_vcn.IAD-NP-LAB05-VCN-02.default_route_table_id
 }
 
 # ------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ resource "oci_core_default_route_table" "IAD-NP-LAB05-1-VCN-02-default-route-tab
 
 resource "oci_core_default_security_list" "Default-Security-List-VCN-02" {
     compartment_id              = var.compartment_id
-    display_name                = "Default Security List for IAD-NP-LAB05-1-VCN02"
+    display_name                = "Default Security List for IAD-NP-LAB05-VCN-02"
     egress_security_rules {
         destination             = "0.0.0.0/0"
         destination_type        = "CIDR_BLOCK"
@@ -126,6 +126,6 @@ resource "oci_core_default_security_list" "Default-Security-List-VCN-02" {
         stateless               = "false"
         protocol                = "all"
     }
-    manage_default_resource_id  = oci_core_vcn.IAD-NP-LAB05-1-VCN02.default_security_list_id
+    manage_default_resource_id  = oci_core_vcn.IAD-NP-LAB05-VCN-02.default_security_list_id
 }
 

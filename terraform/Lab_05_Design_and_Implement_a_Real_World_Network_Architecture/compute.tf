@@ -42,13 +42,13 @@ resource "tls_private_key" "ocinplab05key" {
 # Create instance
 # -----------------------------------------------------------------------------
 
-resource "oci_core_instance" "FRA-AA-LAB08-1-VM-01" {
+resource "oci_core_instance" "IAD-NP-LAB05-VM-01" {
     availability_domain             = local.ad1
     compartment_id                  = var.compartment_id
     shape                           = "VM.Standard.A1.Flex"
 
     create_vnic_details {
-        subnet_id                   = oci_core_subnet.IAD-NP-LAB05-1-SNET-01.id
+        subnet_id                   = oci_core_subnet.IAD-NP-LAB05-SNET-01.id
         assign_public_ip            = true
     }
 
