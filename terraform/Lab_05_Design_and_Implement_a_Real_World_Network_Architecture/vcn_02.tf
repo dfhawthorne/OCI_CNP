@@ -13,7 +13,7 @@
 resource "oci_core_vcn" "IAD-NP-LAB05-VCN-02" {
     compartment_id              = var.compartment_id
     display_name                = "IAD-NP-LAB05-VCN-02"
-    cidr_blocks                 = ["172.0.0.0/16"]
+    cidr_blocks                 = ["172.16.0.0/16"]
     dns_label                   = "iadlab05vcn02"
 }
 
@@ -56,6 +56,20 @@ resource "oci_core_default_dhcp_options" "DHCP-Options-VCN-02" {
         type = "SearchDomain"
     }
 }
+# ------------------------------------------------------------------------------
+# Subnets
+# ------------------------------------------------------------------------------
+
+resource "oci_core_subnet" "IAD-NP-LAB05-SNET-02" {
+    cidr_block                  = "172.16.0.0/24"
+    compartment_id              = var.compartment_id
+    display_name                = "public subnet-IAD-NP-LAB05-VCN-02"
+    dns_label                   = "public"
+    prohibit_internet_ingress   = "false"
+    prohibit_public_ip_on_vnic  = "false"
+    vcn_id                      = oci_core_vcn.IAD-NP-LAB05-VCN-02.id
+}
+
 
 # ------------------------------------------------------------------------------
 # Route tables

@@ -24,12 +24,37 @@ Run the following commands:
 ```bash
 terraform init -reconfigure
 terraform apply -auto-approve
+```
+
+This will fail with the following error message:
+
+```text
+╷
+│ Error: Missing required argument
+│ 
+│   with oci_dns_resolver_endpoint.LAB05_VCN02_LISTENER,
+│   on allow_dns_queries.tf line 48, in resource "oci_dns_resolver_endpoint" "LAB05_VCN02_LISTENER":
+│   48: 	resolver_id                 = data.oci_core_vcn_dns_resolver_association.IAD-NP-LAB05-VCN-02-RESOLVER.dns_resolver_id
+│ 
+│ The argument "resolver_id" is required, but no definition was found.
+╵
+```
+
+Wait a few minutes, then re-issue the following command.  The reason is that OCI takes some time to create the DNS resolver which is not managed by Terraform:
+
+```bash
+terraform apply -auto-approve
+```
+
+```bash
 ./save_private_key.sh
 ```
 
 In the private view for `IAD-NP-LAB-05-VCN-01`, create a DNS zone association with `zone-b.local`.
 
 ## Testing
+
+Wait for a few minutes to allow DNS update propagation.
 
 Use the following command to test the configuration
 
@@ -51,5 +76,11 @@ Activate the web console with: systemctl enable --now cockpit.socket
 server01.zone-a.local has address 10.0.0.2
 zone-a.local name server vcn-dns.oraclevcn.com.
 zone-a.local has SOA record vcn-dns.oraclevcn.com. hostmaster.oracle.com. 2 3600 3600 3600 10
+Using domain server:
+Name: 172.16.0.53
+Address: 172.16.0.53#53
+Aliases: 
+
+server01.zone-b.local has address 172.16.0.123
 server01.zone-b.local has address 172.16.0.123
 ```

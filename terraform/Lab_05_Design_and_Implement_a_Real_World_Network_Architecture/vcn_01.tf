@@ -83,7 +83,7 @@ resource "oci_core_default_route_table" "IAD-NP-LAB05-VCN-01-default-route-table
         network_entity_id       = oci_core_internet_gateway.IAD-NP-LAB05-IG-01.id
     }
     route_rules {
-        destination             = "172.0.0.0/16"
+        destination             = "172.16.0.0/16"
         destination_type        = "CIDR_BLOCK"
         network_entity_id       = oci_core_local_peering_gateway.IAD-NP-LAB05-LPG-01.id
     }
