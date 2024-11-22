@@ -19,3 +19,12 @@
 > 1. Prepare IPSec configuration files.
 > 1. Configure LibreSwan on the on-premises VM.
 > 1. Test the connection
+
+## Get CPE Device Shape OCID
+
+Run the following command to get the CPE Device Shape OCID:
+
+```bash
+oci network cpe-device-shape list --region="US-PHOENIX-1" | \
+    jq '.data[] | select(."cpe-device-info".vendor=="Libreswan").id'
+```
