@@ -1,0 +1,1 @@
+../Lab_06_Site_to_Site_Virtual_Private_Network/phoenix_drg.tf

@@ -20,3 +20,7 @@
 > 1. Create the required remote peering resources in the UK South region.
 > 1. Configure a dynamic routing gateway for remote peering.
 > 1. Route from on-premises to the remote region.
+
+## Implementation Notes
+
+This lab extends [Lab 06: Site-to-Site Virtual Private Network: Connect OCI resources to on-premises via site-to-site VPN, using LibreSwan as the customer premises equipment](https://github.com/dfhawthorne/OCI_CNP/tree/main/terraform/Lab_06_Site_to_Site_Virtual_Private_Network). I have created soft links to the Terraform scripts in that lab.
