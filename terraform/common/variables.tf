@@ -17,3 +17,10 @@ variable "provider_details" {
     sensitive               = true
     description             = "OCI provider details"
 }
+
+variable "my_ip_address" {
+    type                    = string
+    sensitive               = true
+    description             = "My public IP address"
+}
+
