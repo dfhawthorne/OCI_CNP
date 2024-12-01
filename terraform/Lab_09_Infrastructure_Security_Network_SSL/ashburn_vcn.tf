@@ -86,7 +86,7 @@ resource "oci_core_subnet" "IAD-NP-LAB09-SNET-02" {
     prohibit_internet_ingress   = "false"
     prohibit_public_ip_on_vnic  = "false"
     vcn_id                      = oci_core_vcn.IAD-NP-LAB09-VCN-01.id
-    security_list_id            = oci_core_security_list.IAD-NP-LAB09-LB-SL-01.id
+    security_list_ids           = [oci_core_security_list.IAD-NP-LAB09-LB-SL-01.id]
 }
 
 # ------------------------------------------------------------------------------
@@ -166,5 +166,5 @@ resource "oci_core_security_list" "IAD-NP-LAB09-LB-SL-01" {
             min                 = "80"
         }
     }
-    vcn_id                      = oci_core_vcn.IAD-NP-LAB09-VCN-01.default_security_list_id
+    vcn_id                      = oci_core_vcn.IAD-NP-LAB09-VCN-01.id
 }
