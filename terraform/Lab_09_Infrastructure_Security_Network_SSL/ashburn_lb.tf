@@ -9,10 +9,11 @@
 # ------------------------------------------------------------------------------
 
 resource "oci_load_balancer_load_balancer" "IAD-NP-LAB09-LB-01" {
+    provider                    = oci.ashburn
     compartment_id              = var.compartment_id
     display_name                = "IAD-NP-LAB09-LB-01"
     shape                       = "flexible"
-    subnet_ids                  = [oci_core_subnet.public-subnet-IAD-NP-LAB09-VCN-01.id]
+    subnet_ids                  = [oci_core_subnet.IAD-NP-LAB09-SNET-01.id]
     is_private                  = false
     shape_details {
         maximum_bandwidth_in_mbps = 20
@@ -21,6 +22,7 @@ resource "oci_load_balancer_load_balancer" "IAD-NP-LAB09-LB-01" {
 }
 
 resource "oci_load_balancer_backend_set" "IAD-NP-LAB09-BS-01" {
+    provider                    = oci.ashburn
     name                        = "IAD-NP-LAB09-BS-01"
     load_balancer_id            = oci_load_balancer_load_balancer.IAD-NP-LAB09-LB-01.id
     policy                      = "ROUND_ROBIN"
@@ -33,6 +35,7 @@ resource "oci_load_balancer_backend_set" "IAD-NP-LAB09-BS-01" {
 }
 
 resource "oci_load_balancer_backend" "IAD-NP-LAB09-BE-01" {
+    provider                    = oci.ashburn
     load_balancer_id            = oci_load_balancer_load_balancer.IAD-NP-LAB09-LB-01.id
     backendset_name             = oci_load_balancer_backend_set.IAD-NP-LAB09-BS-01.name
     ip_address                  = oci_core_instance.IAD-NP-LAB09-VM-01.private_ip
@@ -40,6 +43,7 @@ resource "oci_load_balancer_backend" "IAD-NP-LAB09-BE-01" {
 }
 
 resource "oci_load_balancer_backend" "IAD-NP-LAB09-BE-02" {
+    provider                    = oci.ashburn
     load_balancer_id            = oci_load_balancer_load_balancer.IAD-NP-LAB09-LB-01.id
     backendset_name             = oci_load_balancer_backend_set.IAD-NP-LAB09-BS-01.name
     ip_address                  = oci_core_instance.IAD-NP-LAB09-VM-02.private_ip
@@ -47,6 +51,7 @@ resource "oci_load_balancer_backend" "IAD-NP-LAB09-BE-02" {
 }
 
 resource "oci_load_balancer_listener" "IAD-NP-LAB09-LISN-01" {
+    provider                    = oci.ashburn
     load_balancer_id            = oci_load_balancer_load_balancer.IAD-NP-LAB09-LB-01.id
     name                        = "IAD-NP-LAB09-LISN-01"
     default_backend_set_name    = oci_load_balancer_backend_set.IAD-NP-LAB09-BS-01.name
@@ -55,6 +60,7 @@ resource "oci_load_balancer_listener" "IAD-NP-LAB09-LISN-01" {
 }
 
 resource "oci_load_balancer_certificate" "IAD-NP-LAB09-CERT-01" {
+    provider                    = oci.ashburn
 	certificate_name            = "IAD-NP-LAB09-CERT-01"
 	load_balancer_id            = oci_load_balancer_load_balancer.IAD-NP-LAB09-LB-01.id
     private_key                 = file("ocilb.key")
