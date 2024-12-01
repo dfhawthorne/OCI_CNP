@@ -38,7 +38,7 @@ esac
 # ------------------------------------------------------------------------------
 
 private_key_pem=$(terraform output -raw private_key_pem)
-case "${vm_01_public_ip}" in
+case "${private_key_pem}" in
     *Warning*)
         printf '%s: Unable to retrieve output variable, %s\n' \
             "${pgm_name}" "private_key_pem" >&2
