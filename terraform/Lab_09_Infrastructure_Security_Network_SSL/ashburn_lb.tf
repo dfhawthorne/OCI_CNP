@@ -56,7 +56,7 @@ resource "oci_load_balancer_listener" "IAD-NP-LAB09-LISN-01" {
     name                        = "IAD-NP-LAB09-LISN-01"
     default_backend_set_name    = oci_load_balancer_backend_set.IAD-NP-LAB09-BS-01.name
     port                        = 443
-    protocol                    = "HTTPS"
+    protocol                    = "HTTP"
 }
 
 resource "oci_load_balancer_certificate" "IAD-NP-LAB09-CERT-01" {
