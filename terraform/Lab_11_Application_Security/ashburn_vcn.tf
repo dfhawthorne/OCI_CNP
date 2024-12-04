@@ -57,7 +57,7 @@ resource "oci_core_subnet" "IAD-NP-LAB11-LB-SNET-02" {
 	dns_label                       = "lb"
 	prohibit_internet_ingress       = false
 	prohibit_public_ip_on_vnic      = false
-    route_table_id                  = oci_core_route_table.IAD-NP-LAB11-RT-02.id
+    route_table_id                  = oci_core_default_route_table.IAD-NP-LAB11-RT-01.id
     security_list_ids               = [oci_core_security_list.IAD-NP-LAB11-LB-SL-01.id]
 }
 
