@@ -25,3 +25,7 @@ output "vm_01_private_ip" {
     value                       = oci_core_instance.IAD-NP-LAB11-VM-01.private_ip
     sensitive                   = false
 }
+
+output "lb_public_ip" {
+    value                       = oci_load_balancer_load_balancer.IAD-NP-LAB11-LB-01.ip_address_details[0].ip_address
+}
