@@ -75,7 +75,7 @@ resource "oci_waf_web_app_firewall_policy" "IAD-NP-LAB11-WAF-01" {
 
         rules {
             action_name        = "WAF-LAB11-Access-Action"
-            condition          = "i_contains(['AY'], connection.source.geo.countryCode)"
+            condition          = "i_contains(['AU'], connection.source.geo.countryCode)"
             condition_language = "JMESPATH"
             name               = "WAF-LAB11-Access-Control"
             type               = "ACCESS_CONTROL"

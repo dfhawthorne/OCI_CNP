@@ -17,4 +17,77 @@
 >
 > ![Lab layout](Lab_11.png)
 
-p.132
+## Implementation
+
+Run the following commands to set up the lab environment for the first two (2) tests:
+
+```bash
+cd terraform/Lab_11_Application_Security
+terraform init
+terraform apply -auto-approve
+```
+
+### Rate Limiting Test
+
+The first test is to limit the page request rate through the load balancer to a maximum of three (3) requests in a period of five (5) seconds:
+
+```bash
+lb_public_ip=$(terraform output -raw lb_public_ip)
+for i in {1..10}
+do
+    curl http://${lb_public_ip}
+done
+```
+
+The expected output is:
+
+```text
+You are visiting Web Server 1
+You are visiting Web Server 1
+You are visiting Web Server 1
+You are visiting Web Server 1
+Too many requests are being sent to Web Server-1.
+Too many requests are being sent to Web Server-1.
+Too many requests are being sent to Web Server-1.
+Too many requests are being sent to Web Server-1.
+Too many requests are being sent to Web Server-1.
+Too many requests are being sent to Web Server-1.
+```
+
+## Protection Rule to Prevent XSS Attack
+
+The second test is block cross-site scripting by trying to insert a Javascript call:
+
+```bash
+lb_public_ip=$(terraform output -raw lb_public_ip)
+curl "http://${lb_public_ip}/index.html?%3Cp%20style=%22background:url(javascript:alert(1))%22%3E"
+```
+
+The expected output is:
+
+```text
+Service Unavailable; web Server is secured against XSS attacks.
+```
+
+## Access Control Rule
+
+This test overrides the above two (2) tests by checking the country of origin. The following commands are used to change the checking country of origin from Antarticia (AY) to Australis (AU):
+
+```bash
+mv ashburn_waf.tf ashburn_waf.tf_orig
+mv ashburn_waf.tf_final ashburn_waf.tf
+terraform apply -auto-approve
+```
+
+To test blocking of requests from Australia, run the following commands:
+
+```bash
+lb_public_ip=$(terraform output -raw lb_public_ip)
+curl http://${lb_public_ip} 
+```
+
+The expected output is:
+
+```text
+Service Unavailable: the web server cannot be accessed by the requested source region.
+```
