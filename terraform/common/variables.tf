@@ -24,3 +24,9 @@ variable "my_ip_address" {
     description             = "My public IP address"
 }
 
+variable "country_of_origin" {
+    type                    = string
+    sensitive               = false
+    description             = "Country Code of origin"
+}
+
