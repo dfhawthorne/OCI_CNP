@@ -25,6 +25,8 @@ Run the following commands to set up the lab environment for the first two (2) t
 cd terraform/Lab_11_Application_Security
 terraform init
 terraform apply -auto-approve
+rm -fr .ssh
+./install_and_configure_web_server.sh
 ```
 
 ### Rate Limiting Test
@@ -74,8 +76,7 @@ Service Unavailable; web Server is secured against XSS attacks.
 This test overrides the above two (2) tests by checking the country of origin. The following commands are used to change the checking country of origin from Antarticia (AY) to Australis (AU):
 
 ```bash
-mv ashburn_waf.tf ashburn_waf.tf_orig
-mv ashburn_waf.tf_final ashburn_waf.tf
+sed -i -re '/^country/s!AY!AU!' ../common/terraform.tfvars
 terraform apply -auto-approve
 ```
 
