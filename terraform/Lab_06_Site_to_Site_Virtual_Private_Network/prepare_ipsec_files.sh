@@ -56,7 +56,7 @@ DONE
 cp /dev/null oci-ipsec.conf
 
 for intf in 1..2
-do  case ${intf}
+do  case ${intf} in
         1)  tunnel_ip=${vpn_1_public_ip}
             mark="5/0xffffffff"
             ;;

@@ -80,6 +80,17 @@ resource "oci_core_subnet" "PHX-NP-LAB06-SNET-01" {
     vcn_id                      = oci_core_vcn.PHX-NP-LAB06-VCN-01.id
 }
 
+resource "oci_core_subnet" "PHX-NP-LAB06-SNET-02" {
+    provider                    = oci.phoenix
+    cidr_block                  = "172.31.1.0/24"
+    compartment_id              = var.compartment_id
+    display_name                = "private subnet-PHX-NP-LAB06-VCN-01"
+    dns_label                   = "private"
+    prohibit_internet_ingress   = "true"
+    prohibit_public_ip_on_vnic  = "true"
+    vcn_id                      = oci_core_vcn.PHX-NP-LAB06-VCN-01.id
+}
+
 # ------------------------------------------------------------------------------
 # Route tables
 # ------------------------------------------------------------------------------

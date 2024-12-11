@@ -17,16 +17,27 @@
 
 # ------------------------------------------------------------------------------
 # Create CPE Object in Phoenix Region
-#
-# Run the following command to get the CPE Device Shape OCID:
-# oci network cpe-device-shape list --region="US-PHOENIX-1" | \
-#     jq '.data[] | select(."cpe-device-info".vendor=="Libreswan").id'
 # ------------------------------------------------------------------------------
+
+data "oci_core_cpe_device_shapes" "PHX-NP-LAB06-CPE-DEV-SHAPES" {
+	provider						= oci.phoenix
+}
+
+locals {
+	available_shapes 				= data.oci_core_cpe_device_shapes.PHX-NP-LAB06-CPE-DEV-SHAPES.cpe_device_shapes
+	cpe_shape_ocid					= lookup(
+											zipmap(
+												local.available_shapes[*].cpe_device_info[0].vendor,
+												local.available_shapes[*].cpe_device_shape_id
+												),
+											"Libreswan"
+										)
+}
 
 resource "oci_core_cpe" "PHX-NP-LAB06-CPE-01" {
     provider                        = oci.phoenix
 	compartment_id                  = var.compartment_id
 	ip_address                      = oci_core_instance.IAD-NP-LAB06-VMCPE-01.public_ip
-	cpe_device_shape_id             = "c4be89f9-3d73-41db-a64d-40d244b1b6f3"
+	cpe_device_shape_id             = local.cpe_shape_ocid
 	display_name                    = "PHX-NP-LAB06-CPE-01"
 }
