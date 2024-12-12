@@ -15,15 +15,15 @@
 # Create a Dynamic Routing Gateway and Attach VCN
 # ------------------------------------------------------------------------------
 
-resource "oci_core_drg" "PHX-NP-LAB06-1-DRG-01" {
+resource "oci_core_drg" "PHX-NP-LAB06-DRG-01" {
     provider                    = oci.phoenix
 	compartment_id              = var.compartment_id
-	display_name                = "PHX-NP-LAB06-1-DRG-01"
+	display_name                = "PHX-NP-LAB06-DRG-01"
 }
 
 resource "oci_core_drg_attachment" "PHX-NP-LAB06-VCN-01-ATCH" {
     provider                    = oci.phoenix
-	drg_id                      = oci_core_drg.PHX-NP-LAB06-1-DRG-01.id
+	drg_id                      = oci_core_drg.PHX-NP-LAB06-DRG-01.id
 	display_name                = "PHX-NP-LAB06-VCN-01-ATCH"
 	network_details {
 		id                      = oci_core_vcn.PHX-NP-LAB06-VCN-01.id

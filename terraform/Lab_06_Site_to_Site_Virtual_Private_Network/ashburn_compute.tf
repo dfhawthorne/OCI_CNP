@@ -76,6 +76,12 @@ resource "oci_core_instance" "IAD-NP-LAB06-VMCPE-01" {
     }
 }
 
+resource "oci_core_private_ip" "IAD-NP-LAB06-VMCPE-Private-IP" {
+	display_name                = "IAD-NP-LAB06-VMCPE-Private-IP"
+    ip_address                  = oci_core_instance.IAD-NP-LAB06-VMCPE-01.private_ip
+}
+
+
 # -----------------------------------------------------------------------------
 # Create PING instance
 # -----------------------------------------------------------------------------

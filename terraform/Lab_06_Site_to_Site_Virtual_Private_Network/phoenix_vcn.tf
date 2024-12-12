@@ -30,14 +30,7 @@ resource "oci_core_vcn" "PHX-NP-LAB06-VCN-01" {
 resource "oci_core_internet_gateway" "PHX-NP-LAB06-IG-01" {
     provider                    = oci.phoenix
     compartment_id              = var.compartment_id
-    display_name                = "LPG gateway-PHX-NP-LAB06-VCN-01"
-    vcn_id                      = oci_core_vcn.PHX-NP-LAB06-VCN-01.id
-}
-
-resource "oci_core_local_peering_gateway" "PHX-NP-LAB06-LPG-01" {
-    provider                    = oci.phoenix
-    compartment_id              = var.compartment_id
-    display_name                = "LPG gateway-PHX-NP-LAB06-VCN-01"
+    display_name                = "PHX-NP-LAB06-IG-01"
     vcn_id                      = oci_core_vcn.PHX-NP-LAB06-VCN-01.id
 }
 
@@ -105,9 +98,9 @@ resource "oci_core_default_route_table" "PHX-NP-LAB06-VCN-01-default-route-table
         network_entity_id       = oci_core_internet_gateway.PHX-NP-LAB06-IG-01.id
     }
     route_rules {
-        destination             = "172.0.0.0/16"
+        destination             = "192.168.20.0/24"
         destination_type        = "CIDR_BLOCK"
-        network_entity_id       = oci_core_local_peering_gateway.PHX-NP-LAB06-LPG-01.id
+        network_entity_id       = oci_core_drg.PHX-NP-LAB06-DRG-01.id
     }
     manage_default_resource_id  = oci_core_vcn.PHX-NP-LAB06-VCN-01.default_route_table_id
 }
@@ -161,6 +154,16 @@ resource "oci_core_default_security_list" "Default-Security-List-VCN-01" {
         source_type             = "CIDR_BLOCK"
         stateless               = "false"
         protocol                = "all"
+    }
+    ingress_security_rules {
+        icmp_options {
+            code                = "-1"
+            type                = "8"
+        }
+        protocol                = "1"
+        source                  = "192.168.0.0/16"
+        source_type             = "CIDR_BLOCK"
+        stateless               = "false"
     }
     manage_default_resource_id  = oci_core_vcn.PHX-NP-LAB06-VCN-01.default_security_list_id
 }

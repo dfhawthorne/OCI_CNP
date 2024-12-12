@@ -62,33 +62,33 @@ data "oci_core_ipsec_connection_tunnels" "PHX-NP-LAB06-VPN-01" {
     ipsec_id                    = oci_core_ipsec.PHX-NP-LAB06-VPN-01.id
 }
 
-#resource "oci_core_ipsec_connection_tunnel_management" "PHX-NP-LAB06-Tunnel-01-MGT" {
-#    provider                    = oci.phoenix
-#    ipsec_id                    = oci_core_ipsec.PHX-NP-LAB06-VPN-01.id
-#    tunnel_id                   = data.oci_core_ipsec_connection_tunnels.PHX-NP-LAB06-VPN-01.ip_sec_connection_tunnels[0].id
-#    routing                     = "STATIC"
-#    display_name                = "PHX-NP-LAB06-Tunnel-01-MGT"
-#    shared_secret               = local.vpn_1_secret
-#    ike_version                 = "V1"
-#}
+resource "oci_core_ipsec_connection_tunnel_management" "PHX-NP-LAB06-Tunnel-01-MGT" {
+    provider                    = oci.phoenix
+    ipsec_id                    = oci_core_ipsec.PHX-NP-LAB06-VPN-01.id
+    tunnel_id                   = data.oci_core_ipsec_connection_tunnels.PHX-NP-LAB06-VPN-01.ip_sec_connection_tunnels[0].id
+    routing                     = "STATIC"
+    display_name                = "PHX-NP-LAB06-Tunnel-01"
+    shared_secret               = local.vpn_1_secret
+    ike_version                 = "V1"
+}
 
-#resource "oci_core_ipsec_connection_tunnel_management" "PHX-NP-LAB06-Tunnel-02-MGT" {
-#    provider                    = oci.phoenix
-#    ipsec_id                    = oci_core_ipsec.PHX-NP-LAB06-VPN-01.id
-#    tunnel_id                   = data.oci_core_ipsec_connection_tunnels.PHX-NP-LAB06-VPN-01.ip_sec_connection_tunnels[1].id
-#    routing                     = "STATIC"
-#    display_name                = "PHX-NP-LAB06-Tunnel-02-MGT"
-#    shared_secret               = local.vpn_2_secret
-#    ike_version                 = "V1"
-#}
+resource "oci_core_ipsec_connection_tunnel_management" "PHX-NP-LAB06-Tunnel-02-MGT" {
+    provider                    = oci.phoenix
+    ipsec_id                    = oci_core_ipsec.PHX-NP-LAB06-VPN-01.id
+    tunnel_id                   = data.oci_core_ipsec_connection_tunnels.PHX-NP-LAB06-VPN-01.ip_sec_connection_tunnels[1].id
+    routing                     = "STATIC"
+    display_name                = "PHX-NP-LAB06-Tunnel-02"
+    shared_secret               = local.vpn_2_secret
+    ike_version                 = "V1"
+}
 
 resource "oci_core_ipsec" "PHX-NP-LAB06-VPN-01" {
     provider                    = oci.phoenix
     compartment_id              = var.compartment_id
     cpe_id                      = oci_core_cpe.PHX-NP-LAB06-CPE-01.id
-    drg_id                      = oci_core_drg.PHX-NP-LAB06-1-DRG-01.id
+    drg_id                      = oci_core_drg.PHX-NP-LAB06-DRG-01.id
     static_routes               = [
-            "192.168.16.0/24"
+            "192.168.20.0/24"
         ]
     display_name                = "PHX-NP-LAB06-VPN-01"
 }

@@ -33,13 +33,6 @@ resource "oci_core_internet_gateway" "IAD-NP-LAB06-IG-01" {
     vcn_id                      = oci_core_vcn.IAD-NP-LAB06-OPN-01.id
 }
 
-resource "oci_core_local_peering_gateway" "IAD-NP-LAB06-LPG-01" {
-    provider                    = oci.ashburn
-    compartment_id              = var.compartment_id
-    display_name                = "LPG gateway-IAD-NP-LAB06-OPN-01"
-    vcn_id                      = oci_core_vcn.IAD-NP-LAB06-OPN-01.id
-}
-
 # ------------------------------------------------------------------------------
 # DHCP Options
 # ------------------------------------------------------------------------------
@@ -88,6 +81,10 @@ resource "oci_core_subnet" "IAD-NP-LAB06-SNET-02" {
     prohibit_internet_ingress   = "true"
     prohibit_public_ip_on_vnic  = "true"
     vcn_id                      = oci_core_vcn.IAD-NP-LAB06-OPN-01.id
+    security_list_ids           = [
+        oci_core_security_list.Private-Security-List-OPN-01.id
+    ]
+    route_table_id              = oci_core_route_table.IAD-NP-LAB06-SNET-02-route-table.id
 }
 
 # ------------------------------------------------------------------------------
@@ -103,12 +100,19 @@ resource "oci_core_default_route_table" "IAD-NP-LAB06-OPN-01-default-route-table
         destination_type        = "CIDR_BLOCK"
         network_entity_id       = oci_core_internet_gateway.IAD-NP-LAB06-IG-01.id
     }
-    route_rules {
-        destination             = "172.0.0.0/16"
-        destination_type        = "CIDR_BLOCK"
-        network_entity_id       = oci_core_local_peering_gateway.IAD-NP-LAB06-LPG-01.id
-    }
     manage_default_resource_id  = oci_core_vcn.IAD-NP-LAB06-OPN-01.default_route_table_id
+}
+
+resource "oci_core_route_table" "IAD-NP-LAB06-SNET-02-route-table" {
+    provider                    = oci.ashburn
+    compartment_id              = var.compartment_id
+    display_name                = "IAD-NP-LAB06-SNET-02-route-table"
+    route_rules {
+        destination             = "172.16.0.0/12"
+        destination_type        = "CIDR_BLOCK"
+        network_entity_id       = oci_core_private_ip.IAD-NP-LAB06-VMCPE-Private-IP.id
+    }
+    vcn_id                      = oci_core_vcn.IAD-NP-LAB06-OPN-01.id
 }
 
 # ------------------------------------------------------------------------------
@@ -156,10 +160,31 @@ resource "oci_core_default_security_list" "Default-Security-List-OPN-01" {
         stateless               = "false"
     }
     ingress_security_rules {
-        source                  = "172.0.0.0/16"
+        icmp_options {
+            code                = "-1"
+            type                = "8"
+        }
+        source                  = "172.16.0.0/12"
         source_type             = "CIDR_BLOCK"
         stateless               = "false"
-        protocol                = "all"
+        protocol                = "1"
     }
     manage_default_resource_id  = oci_core_vcn.IAD-NP-LAB06-OPN-01.default_security_list_id
+}
+
+resource "oci_core_security_list" "Private-Security-List-OPN-01" {
+    provider                    = oci.ashburn
+    compartment_id              = var.compartment_id
+    display_name                = "Security List for IAD-NP-LAB06-SNET-02"
+    vcn_id                      = oci_core_vcn.IAD-NP-LAB06-OPN-01.id
+    ingress_security_rules {
+        icmp_options {
+            code                = "-1"
+            type                = "8"
+        }
+        source                  = "172.16.0.0/12"
+        source_type             = "CIDR_BLOCK"
+        stateless               = "false"
+        protocol                = "1"
+    }
 }

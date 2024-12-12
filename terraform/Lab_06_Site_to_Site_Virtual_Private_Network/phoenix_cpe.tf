@@ -17,6 +17,9 @@
 
 # ------------------------------------------------------------------------------
 # Create CPE Object in Phoenix Region
+#
+# Note: The CPE Shape is chosen from the first one that matches the vendor
+#       without considering the platform/version field.
 # ------------------------------------------------------------------------------
 
 data "oci_core_cpe_device_shapes" "PHX-NP-LAB06-CPE-DEV-SHAPES" {
@@ -26,11 +29,11 @@ data "oci_core_cpe_device_shapes" "PHX-NP-LAB06-CPE-DEV-SHAPES" {
 locals {
 	available_shapes 				= data.oci_core_cpe_device_shapes.PHX-NP-LAB06-CPE-DEV-SHAPES.cpe_device_shapes
 	cpe_shape_ocid					= lookup(
-											zipmap(
-												local.available_shapes[*].cpe_device_info[0].vendor,
-												local.available_shapes[*].cpe_device_shape_id
-												),
-											"Libreswan"
+										zipmap(
+											local.available_shapes[*].cpe_device_info[0].vendor,
+											local.available_shapes[*].cpe_device_shape_id
+											),
+										"Libreswan"
 										)
 }
 

@@ -28,9 +28,9 @@ net.ipv4.ip_forward=1
 net.ipv4.conf.all.accept_redirects=0
 net.ipv4.conf.all.send_redirects=0
 net.ipv4.conf.default.send_redirects=0
-net.ipv4.conf.enp0sx.send_redirects=0
+net.ipv4.conf.enp0s6.send_redirects=0
 net.ipv4.conf.default.accept_redirects=0
-net.ipv4.conf.enp0sx.accept_redirects=0
+net.ipv4.conf.enp0s6.accept_redirects=0
 DONE
 
 # ------------------------------------------------------------------------------
@@ -55,7 +55,7 @@ DONE
 
 cp /dev/null oci-ipsec.conf
 
-for intf in 1..2
+for intf in {1..2}
 do  case ${intf} in
         1)  tunnel_ip=${vpn_1_public_ip}
             mark="5/0xffffffff"
