@@ -76,11 +76,18 @@ resource "oci_core_instance" "IAD-NP-LAB06-VMCPE-01" {
     }
 }
 
-resource "oci_core_private_ip" "IAD-NP-LAB06-VMCPE-Private-IP" {
-	display_name                = "IAD-NP-LAB06-VMCPE-Private-IP"
-    ip_address                  = oci_core_instance.IAD-NP-LAB06-VMCPE-01.private_ip
+data "oci_core_vnic_attachments" "IAD-NP-LAB06-VMCPE-Private-VNICS" {
+    provider                    = oci.ashburn
+	compartment_id              = var.compartment_id
+	instance_id                 = oci_core_instance.IAD-NP-LAB06-VMCPE-01.id
 }
 
+resource "oci_core_private_ip" "IAD-NP-LAB06-VMCPE-Private-IP" {
+    provider                    = oci.ashburn
+	display_name                = "IAD-NP-LAB06-VMCPE-Private-IP"
+    ip_address                  = oci_core_instance.IAD-NP-LAB06-VMCPE-01.private_ip
+    vnic_id                     = data.oci_core_vnic_attachments.IAD-NP-LAB06-VMCPE-Private-VNICS.vnic_attachments[0].id
+}
 
 # -----------------------------------------------------------------------------
 # Create PING instance
