@@ -110,7 +110,7 @@ resource "oci_core_route_table" "IAD-NP-LAB06-SNET-02-route-table" {
     route_rules {
         destination             = "172.16.0.0/12"
         destination_type        = "CIDR_BLOCK"
-        network_entity_id       = oci_core_private_ip.IAD-NP-LAB06-VMCPE-Private-IP.id
+        network_entity_id       = data.oci_core_private_ips.IAD-NP-LAB06-VMCPE-Private-IP.private_ips[0].id
     }
     vcn_id                      = oci_core_vcn.IAD-NP-LAB06-OPN-01.id
 }

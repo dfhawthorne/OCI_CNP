@@ -20,11 +20,45 @@
 > 1. Configure LibreSwan on the on-premises VM.
 > 1. Test the connection
 
-## Get CPE Device Shape OCID
+## Implementation
 
-Run the following command to get the CPE Device Shape OCID:
+Run the following commands to set up the lab environment:
 
 ```bash
-oci network cpe-device-shape list --region="US-PHOENIX-1" | \
-    jq '.data[] | select(."cpe-device-info".vendor=="Libreswan").id'
+terraform init
+terraform apply -auto-approve
+./prepare_ipsec_files.sh
+./configure_libreswan.sh
+```
+
+## Validation of Lab Environment
+
+Run the following command to validate the lab environment:
+
+```bash
+./validate_setup.sh 
+```
+
+Sample output is:
+
+```text
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Warning: Permanently added '141.148.166.83' (ED25519) to the list of known hosts.
+Activate the web console with: systemctl enable --now cockpit.socket
+
+PING 192.168.20.190 (192.168.20.190) 56(84) bytes of data.
+64 bytes from 192.168.20.190: icmp_seq=1 ttl=61 time=57.5 ms
+64 bytes from 192.168.20.190: icmp_seq=2 ttl=61 time=57.4 ms
+64 bytes from 192.168.20.190: icmp_seq=3 ttl=61 time=57.4 ms
+64 bytes from 192.168.20.190: icmp_seq=4 ttl=61 time=57.3 ms
+64 bytes from 192.168.20.190: icmp_seq=5 ttl=61 time=57.3 ms
+64 bytes from 192.168.20.190: icmp_seq=6 ttl=61 time=57.5 ms
+64 bytes from 192.168.20.190: icmp_seq=7 ttl=61 time=57.3 ms
+64 bytes from 192.168.20.190: icmp_seq=8 ttl=61 time=57.3 ms
+64 bytes from 192.168.20.190: icmp_seq=9 ttl=61 time=57.3 ms
+64 bytes from 192.168.20.190: icmp_seq=10 ttl=61 time=57.4 ms
+
+--- 192.168.20.190 ping statistics ---
+10 packets transmitted, 10 received, 0% packet loss, time 9013ms
+rtt min/avg/max/mdev = 57.255/57.374/57.524/0.314 ms
 ```

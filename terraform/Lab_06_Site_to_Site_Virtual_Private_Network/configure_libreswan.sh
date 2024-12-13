@@ -47,6 +47,7 @@ cat oci-ipsec.secrets | \
 cat oci-ipsec.conf | \
     sudo tee /etc/ipsec.d/oci-ipsec.conf >/dev/null
 sudo service ipsec restart
+sleep 10
 sudo ip route add 172.16.0.0/12 \
     nexthop dev vti1 \
     nexthop dev vti2

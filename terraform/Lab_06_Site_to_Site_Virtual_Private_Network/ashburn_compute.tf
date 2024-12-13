@@ -14,12 +14,12 @@
 # Get Availability Domains, and OL8 Images
 # ------------------------------------------------------------------------------
 
-data "oci_identity_availability_domains" "ads" {
+data "oci_identity_availability_domains" "iad_ads" {
     provider                    = oci.ashburn
     compartment_id              = var.provider_details.tenancy_ocid
 }
 
-data "oci_core_images" "ol8_images" {
+data "oci_core_images" "iad_ol8_images" {
     provider                    = oci.ashburn
     compartment_id              = var.compartment_id
     operating_system            = "Oracle Linux"
@@ -30,9 +30,8 @@ data "oci_core_images" "ol8_images" {
 }
 
 locals {
-    ad1                         = data.oci_identity_availability_domains.ads.availability_domains[0].name
-    latest_ol8_image_id         = data.oci_core_images.ol8_images.images[0].id
-    latest_ol8_image_name       = data.oci_core_images.ol8_images.images[0].display_name
+    iad_ad1                     = data.oci_identity_availability_domains.iad_ads.availability_domains[0].name
+    latest_iad_ol8_image_id     = data.oci_core_images.iad_ol8_images.images[0].id
 }
 
 # ------------------------------------------------------------------------------
@@ -50,7 +49,7 @@ resource "tls_private_key" "ocinplab06cpekey" {
 
 resource "oci_core_instance" "IAD-NP-LAB06-VMCPE-01" {
     provider                    = oci.ashburn
-    availability_domain         = local.ad1
+    availability_domain         = local.iad_ad1
     compartment_id              = var.compartment_id
     shape                       = "VM.Standard.A1.Flex"
     display_name                = "IAD-NP-LAB06-VMCPE-01"
@@ -63,7 +62,7 @@ resource "oci_core_instance" "IAD-NP-LAB06-VMCPE-01" {
 
     source_details {
         source_type             = "image"
-        source_id               = local.latest_ol8_image_id
+        source_id               = local.latest_iad_ol8_image_id
     }
 
     shape_config                {
@@ -76,17 +75,23 @@ resource "oci_core_instance" "IAD-NP-LAB06-VMCPE-01" {
     }
 }
 
-data "oci_core_vnic_attachments" "IAD-NP-LAB06-VMCPE-Private-VNICS" {
+data "oci_core_vnic_attachments" "IAD-NP-LAB06-VMCPE-vnic-attachments" {
     provider                    = oci.ashburn
 	compartment_id              = var.compartment_id
 	instance_id                 = oci_core_instance.IAD-NP-LAB06-VMCPE-01.id
 }
 
-resource "oci_core_private_ip" "IAD-NP-LAB06-VMCPE-Private-IP" {
+# ------------------------------------------------------------------------------
+# Cannot use ip_address and subnet_id to look up the generated private IP OCID 
+# as this combination generates the following error message:
+# Error: Cycle: data.oci_core_private_ips.IAD-NP-LAB06-VMCPE-Private-IP, 
+# oci_core_route_table.IAD-NP-LAB06-SNET-02-route-table, 
+# oci_core_subnet.IAD-NP-LAB06-SNET-02
+# ------------------------------------------------------------------------------
+
+data "oci_core_private_ips" "IAD-NP-LAB06-VMCPE-Private-IP" {
     provider                    = oci.ashburn
-	display_name                = "IAD-NP-LAB06-VMCPE-Private-IP"
-    ip_address                  = oci_core_instance.IAD-NP-LAB06-VMCPE-01.private_ip
-    vnic_id                     = data.oci_core_vnic_attachments.IAD-NP-LAB06-VMCPE-Private-VNICS.vnic_attachments[0].id
+    vnic_id                     = data.oci_core_vnic_attachments.IAD-NP-LAB06-VMCPE-vnic-attachments.vnic_attachments[0].vnic_id
 }
 
 # -----------------------------------------------------------------------------
@@ -95,7 +100,7 @@ resource "oci_core_private_ip" "IAD-NP-LAB06-VMCPE-Private-IP" {
 
 resource "oci_core_instance" "IAD-NP-LAB06-PingVM-01" {
     provider                    = oci.ashburn
-    availability_domain         = local.ad1
+    availability_domain         = local.iad_ad1
     compartment_id              = var.compartment_id
     shape                       = "VM.Standard.A1.Flex"
     display_name                = "IAD-NP-LAB06-PingVM-01"
@@ -107,7 +112,7 @@ resource "oci_core_instance" "IAD-NP-LAB06-PingVM-01" {
 
     source_details {
         source_type             = "image"
-        source_id               = local.latest_ol8_image_id
+        source_id               = local.latest_iad_ol8_image_id
     }
 
     shape_config                {

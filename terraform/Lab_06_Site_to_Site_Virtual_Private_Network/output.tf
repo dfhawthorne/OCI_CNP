@@ -26,6 +26,16 @@ output "cpe_private_ip" {
     sensitive                   = false
 }
 
+output "pingvm_private_ip" {
+    value                       = oci_core_instance.IAD-NP-LAB06-PingVM-01.private_ip
+    sensitive                   = false
+}
+
+output "testvm_public_ip" {
+    value                       = oci_core_instance.PHX-NP-LAB06-VM-01.public_ip
+    sensitive                   = false
+}
+
 output "vpn_1_public_ip" {
     value                       = data.oci_core_ipsec_connection_tunnels.PHX-NP-LAB06-VPN-01.ip_sec_connection_tunnels[0].vpn_ip
     sensitive                   = false
