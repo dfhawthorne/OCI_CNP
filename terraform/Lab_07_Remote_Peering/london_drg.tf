@@ -26,3 +26,23 @@ resource "oci_core_drg_attachment" "LHR-NP-LAB07-VCN-01-ATCH" {
 	}
 }
 
+# ------------------------------------------------------------------------------
+# Create Remote Peering Connection 
+# ------------------------------------------------------------------------------
+
+resource "oci_core_remote_peering_connection" "PHX-NP-LAB07-RPC-01" {
+	provider 					= oci.phoenix
+	compartment_id 				= var.compartment_id
+	drg_id 						= oci_core_drg.PHX-NP-LAB06-DRG-01.id
+	display_name 				= "PHX-NP-LAB07-RPC-01"
+}
+
+resource "oci_core_remote_peering_connection" "LHR-NP-LAB07-RPC-01" {
+	provider 					= oci.london
+	compartment_id 				= var.compartment_id
+	drg_id 						= oci_core_drg.LHR-NP-LAB07-DRG-01.id
+	display_name 				= "LHR-NP-LAB07-RPC-01"
+	peer_id 					= oci_core_remote_peering_connection.PHX-NP-LAB07-RPC-01.id
+	peer_region_name 			= "US-PHOENIX-1"
+}
+

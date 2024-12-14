@@ -35,13 +35,13 @@ output "vm_public_key_pem" {
     sensitive                   = false
 }
 
-output "cpe_public_ip" {
-    value                       = oci_core_instance.IAD-NP-LAB07-VM-01.public_ip
+output "vm_01_public_ip" {
+    value                       = oci_core_instance.LHR-NP-LAB07-VM-01.public_ip
     sensitive                   = false
 }
 
-output "cpe_private_ip" {
-    value                       = oci_core_instance.IAD-NP-LAB07-VM-01.private_ip
+output "vm_01_private_ip" {
+    value                       = oci_core_instance.LHR-NP-LAB07-VM-01.private_ip
     sensitive                   = false
 }
 output "vpn_1_public_ip" {
