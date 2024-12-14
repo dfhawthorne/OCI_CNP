@@ -116,7 +116,7 @@ resource "oci_core_default_route_table" "PHX-NP-LAB06-VCN-01-default-route-table
 # Security lists (aka Firewall Rules)
 # ------------------------------------------------------------------------------
 
-resource "oci_core_default_security_list" "Default-Security-List-VCN-01" {
+resource "oci_core_default_security_list" "PHX_Default-Security-List-VCN-01" {
     provider                    = oci.phoenix
     compartment_id              = var.compartment_id
     display_name                = "Default Security List for PHX-NP-LAB06-VCN-01"
@@ -155,12 +155,6 @@ resource "oci_core_default_security_list" "Default-Security-List-VCN-01" {
         source                  = "172.31.0.0/16"
         source_type             = "CIDR_BLOCK"
         stateless               = "false"
-    }
-    ingress_security_rules {
-        source                  = "172.0.0.0/16"
-        source_type             = "CIDR_BLOCK"
-        stateless               = "false"
-        protocol                = "all"
     }
     ingress_security_rules {
         icmp_options {

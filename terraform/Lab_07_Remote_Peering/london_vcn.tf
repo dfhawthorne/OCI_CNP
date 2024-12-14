@@ -136,16 +136,6 @@ resource "oci_core_default_security_list" "LHR-Default-Security-List-VCN-01" {
     ingress_security_rules {
         icmp_options {
             code                = "-1"
-            type                = "3"
-        }
-        protocol                = "1"
-        source                  = "172.17.0.0/16"
-        source_type             = "CIDR_BLOCK"
-        stateless               = "false"
-    }
-    ingress_security_rules {
-        icmp_options {
-            code                = "-1"
             type                = "8"
         }
         protocol                = "1"

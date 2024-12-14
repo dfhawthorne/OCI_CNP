@@ -43,6 +43,6 @@ resource "oci_core_remote_peering_connection" "LHR-NP-LAB07-RPC-01" {
 	drg_id 						= oci_core_drg.LHR-NP-LAB07-DRG-01.id
 	display_name 				= "LHR-NP-LAB07-RPC-01"
 	peer_id 					= oci_core_remote_peering_connection.PHX-NP-LAB07-RPC-01.id
-	peer_region_name 			= "US-PHOENIX-1"
+	peer_region_name 			= "us-phoenix-1"
 }
 

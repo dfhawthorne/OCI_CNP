@@ -24,3 +24,81 @@
 ## Implementation Notes
 
 This lab extends [Lab 06: Site-to-Site Virtual Private Network: Connect OCI resources to on-premises via site-to-site VPN, using LibreSwan as the customer premises equipment](https://github.com/dfhawthorne/OCI_CNP/tree/main/terraform/Lab_06_Site_to_Site_Virtual_Private_Network). I have created soft links to the Terraform scripts in that lab.
+
+The exception is `phoenix_vcn.tf` is updated with Remote Peering Connection to London, along with an expanded security list and route table.
+
+## Implementation
+
+Run the following commands to set up the lab:
+
+```bash
+terraform init
+terraform apply -auto-approve
+./setup_ssh.sh
+./prepare_ipsec_files.sh
+./configure_libreswan.sh
+```
+
+## Validation
+
+To validate the lab set-up, run the following command:
+
+```bash
+./validate_setup.sh     
+```
+
+Sample output is:
+
+```text
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Activate the web console with: systemctl enable --now cockpit.socket
+
+PING 192.168.20.193 (192.168.20.193) 56(84) bytes of data.
+64 bytes from 192.168.20.193: icmp_seq=1 ttl=61 time=57.4 ms
+64 bytes from 192.168.20.193: icmp_seq=2 ttl=61 time=57.2 ms
+64 bytes from 192.168.20.193: icmp_seq=3 ttl=61 time=57.3 ms
+64 bytes from 192.168.20.193: icmp_seq=4 ttl=61 time=57.2 ms
+64 bytes from 192.168.20.193: icmp_seq=5 ttl=61 time=57.2 ms
+64 bytes from 192.168.20.193: icmp_seq=6 ttl=61 time=57.3 ms
+64 bytes from 192.168.20.193: icmp_seq=7 ttl=61 time=57.4 ms
+64 bytes from 192.168.20.193: icmp_seq=8 ttl=61 time=57.2 ms
+64 bytes from 192.168.20.193: icmp_seq=9 ttl=61 time=57.3 ms
+64 bytes from 192.168.20.193: icmp_seq=10 ttl=61 time=57.4 ms
+
+--- 192.168.20.193 ping statistics ---
+10 packets transmitted, 10 received, 0% packet loss, time 9012ms
+rtt min/avg/max/mdev = 57.150/57.274/57.380/0.077 ms
+PING 172.17.0.96 (172.17.0.96) 56(84) bytes of data.
+64 bytes from 172.17.0.96: icmp_seq=1 ttl=62 time=127 ms
+64 bytes from 172.17.0.96: icmp_seq=2 ttl=62 time=127 ms
+64 bytes from 172.17.0.96: icmp_seq=3 ttl=62 time=127 ms
+64 bytes from 172.17.0.96: icmp_seq=4 ttl=62 time=127 ms
+64 bytes from 172.17.0.96: icmp_seq=5 ttl=62 time=127 ms
+64 bytes from 172.17.0.96: icmp_seq=6 ttl=62 time=127 ms
+64 bytes from 172.17.0.96: icmp_seq=7 ttl=62 time=127 ms
+64 bytes from 172.17.0.96: icmp_seq=8 ttl=62 time=127 ms
+64 bytes from 172.17.0.96: icmp_seq=9 ttl=62 time=127 ms
+64 bytes from 172.17.0.96: icmp_seq=10 ttl=62 time=127 ms
+
+--- 172.17.0.96 ping statistics ---
+10 packets transmitted, 10 received, 0% packet loss, time 9012ms
+rtt min/avg/max/mdev = 127.187/127.282/127.398/0.425 ms
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Activate the web console with: systemctl enable --now cockpit.socket
+
+PING 172.31.0.108 (172.31.0.108) 56(84) bytes of data.
+64 bytes from 172.31.0.108: icmp_seq=1 ttl=62 time=126 ms
+64 bytes from 172.31.0.108: icmp_seq=2 ttl=62 time=126 ms
+64 bytes from 172.31.0.108: icmp_seq=3 ttl=62 time=126 ms
+64 bytes from 172.31.0.108: icmp_seq=4 ttl=62 time=126 ms
+64 bytes from 172.31.0.108: icmp_seq=5 ttl=62 time=126 ms
+64 bytes from 172.31.0.108: icmp_seq=6 ttl=62 time=126 ms
+64 bytes from 172.31.0.108: icmp_seq=7 ttl=62 time=126 ms
+64 bytes from 172.31.0.108: icmp_seq=8 ttl=62 time=126 ms
+64 bytes from 172.31.0.108: icmp_seq=9 ttl=62 time=126 ms
+64 bytes from 172.31.0.108: icmp_seq=10 ttl=62 time=126 ms
+
+--- 172.31.0.108 ping statistics ---
+10 packets transmitted, 10 received, 0% packet loss, time 9011ms
+rtt min/avg/max/mdev = 125.961/126.032/126.139/0.229 ms
+```
