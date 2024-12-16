@@ -96,6 +96,11 @@ resource "oci_core_default_route_table" "LHR-NP-LAB07-VCN-01-default-route-table
         destination_type        = "CIDR_BLOCK"
         network_entity_id       = oci_core_drg.LHR-NP-LAB07-DRG-01.id
     }
+    route_rules {
+        destination             = "192.168.20.0/24"
+        destination_type        = "CIDR_BLOCK"
+        network_entity_id       = oci_core_drg.LHR-NP-LAB07-DRG-01.id
+    }
     manage_default_resource_id  = oci_core_vcn.LHR-NP-LAB07-VCN-01.default_route_table_id
 }
 
@@ -140,6 +145,16 @@ resource "oci_core_default_security_list" "LHR-Default-Security-List-VCN-01" {
         }
         protocol                = "1"
         source                  = "172.31.0.0/16"
+        source_type             = "CIDR_BLOCK"
+        stateless               = "false"
+    }
+    ingress_security_rules {
+        icmp_options {
+            code                = "-1"
+            type                = "8"
+        }
+        protocol                = "1"
+        source                  = "192.168.20.0/24"
         source_type             = "CIDR_BLOCK"
         stateless               = "false"
     }
