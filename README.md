@@ -11,3 +11,4 @@ Two (2) labs (7 and 8) in the `terraform` directory were not completed before th
 
 The `ansible` directory tree was removed because no work was done there.
 
+This repository has been archived.
