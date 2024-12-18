@@ -1,5 +1,9 @@
 # Lab 08: Infrastructure Security - Network: Create a Network Source to Restrict Access to Object Storage Service
 
+## Status
+
+__INCOMPLETE__: Due to the lab environment for the course being closed out, I was unable to complete this lab.
+
 ## Overview
 
 > A network source allows you to specify the IP addresses that are allowed. Then, in your policy, include a condition that only allows access from IP addresses specified in your network source. When a policy specifies it, IAM verifies that a request to access a resource comes from an allowed IP address.

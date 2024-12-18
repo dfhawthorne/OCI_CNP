@@ -1,5 +1,9 @@
 # Lab 07: Remote Peering: InterConnect OCI resources between regions and extend to on-premises
 
+## Status
+
+__INCOMPLETE__: Due to the lab environment being closed out, I was unable to complete this lab.
+
 ## Overview
 
 > A Dynamic Routing Gateway (DRG) is an OCI virtual router. It provides a path for traffic between on-premises networks and Virtaul Cloud Networks via Site-to-site VPN, or via FastConnect. DRGs are also used for routing traffic between VCNs that are located within the same region, remote regions, and/or in other OCI accounts (tenancies). Using different types of attachmennts, custom network topologies can be constructed using components in different regions and tenancies. Each DRG attachment has an associated route table which is used to route packets entering the DRG to their next hop.
