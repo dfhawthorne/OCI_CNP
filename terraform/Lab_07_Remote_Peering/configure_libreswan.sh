@@ -18,6 +18,9 @@ fi
 # Copy generated security files to CPE VM
 # ------------------------------------------------------------------------------
 
+[[ -x ./prepare_ipsec_files.sh ]] && \
+    ./prepare_ipsec_files.sh
+
 sftp -b - -F .ssh/config CPE <<DONE
 put oci-ipsec.conf
 put oci-ipsec.secrets
