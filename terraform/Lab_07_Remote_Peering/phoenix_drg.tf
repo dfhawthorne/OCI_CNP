@@ -85,7 +85,7 @@ resource "oci_core_drg_route_table" "PHX-NP-LAB07-RT-VPN-01" {
     provider                    = oci.phoenix
 	drg_id                      = oci_core_drg.PHX-NP-LAB06-DRG-01.id
 	display_name                = "PHX-NP-LAB07-RT-VPN-01"
-	import_drg_route_distribution_id = oci_core_drg_route_distribution.PHX-NP-LAB07-RD-VPN-01.id
+	import_drg_route_distribution_id = oci_core_drg_route_distribution.PHX-NP-LAB07-RD-RPC-01.id
 }
 
 #resource "oci_core_drg_attachment_management" "PHX-NP-LAB07-ATTCH-VPN-01" {
@@ -102,7 +102,7 @@ resource "oci_core_drg_route_table" "PHX-NP-LAB07-RT-RPC-01" {
     provider                    = oci.phoenix
 	drg_id                      = oci_core_drg.PHX-NP-LAB06-DRG-01.id
 	display_name                = "PHX-NP-LAB07-RT-RPC-01"
-	import_drg_route_distribution_id = oci_core_drg_route_distribution.PHX-NP-LAB07-RD-RPC-01.id
+	import_drg_route_distribution_id = oci_core_drg_route_distribution.PHX-NP-LAB07-RD-VPN-01.id
 }
 
 #resource "oci_core_drg_attachment_management" "PHX-NP-LAB07-ATTCH-RPC-01" {
