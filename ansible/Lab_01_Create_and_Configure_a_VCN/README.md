@@ -1,1 +1,1 @@
-../terraform/Lab_01_Create_and_Configure_a_VCN/README.md
+../../terraform/Lab_01_Create_and_Configure_a_VCN/README.md

@@ -1,1 +1,1 @@
-../terraform/Lab_02_Configure_Local_VCN_Peering/README.md
+../../terraform/Lab_02_Configure_Local_VCN_Peering/README.md
