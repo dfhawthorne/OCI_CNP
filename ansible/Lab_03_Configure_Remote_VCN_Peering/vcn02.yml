@@ -1,0 +1,214 @@
+---
+- name:                       Create a VCN
+  oracle.oci.oci_network_vcn:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "LHR-NP-LAB03-VCN-02"
+    cidr_block:               "10.0.0.0/16"
+    dns_label:                "lhrnplab03vcn02"
+    state:                    "present"
+  register:                   vcn_result
+
+- name:                       "Create NAT Gateway"
+  oracle.oci.oci_network_nat_gateway:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "NAT-gateway-LHR-NP-LAB03-VCN-02"
+    state:                    "present"
+  register:                   natg_result
+
+- name:                       "Create Internet Gateway"
+  oracle.oci.oci_network_internet_gateway:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "Internet-gateway-LHR-NP-LAB03-VCN-02"
+    is_enabled:               true
+    state:                    "present"
+  register:                   ig_result
+
+- name:                       "Create Service Gateway"
+  oracle.oci.oci_network_service_gateway:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "Service-gateway-LHR-NP-LAB03-VCN-02"
+    services:
+      - service_id:           "ocid1.service.oc1.uk-london-1.aaaaaaaatwg7f5mnzoapfunl66n2qkp4ormiykqk3hiwksum63gcyjk7ysla"
+    state:                    "present"
+  register:                   sg_result
+
+- name:                       "Create DHCP Options"
+  oracle.oci.oci_network_dhcp_options:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "DHCP-Options-for-LHR-NP-LAB03-VCN-02"
+    options:
+      - type:                 "DomainNameServer"
+        server_type:          "VcnLocalPlusInternet"
+      - type:                 "SearchDomain"
+        search_domain_names:  ["lhrnplab03vcn02.oraclevcn.com"]
+    state:                    "present"
+  register:                   dhcp_result
+
+- name:                       "Create a security list for the private subnet"
+  oracle.oci.oci_network_security_list:
+    region:                   "{{ region }}"
+    display_name:             "security list for private subnet-LHR-NP-LAB03-VCN-02"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    state:                    "present"
+    ingress_security_rules:
+      - source:               "10.0.0.0/16"
+        protocol:             "6"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        tcp_options:
+          destination_port_range:
+            min:              "22"
+            max:              "22"
+    egress_security_rules:
+      - destination:          "0.0.0.0/0"
+        protocol:             "all"
+        destination_type:     "CIDR_BLOCK"
+        is_stateless:         false
+  register:                   sl_result
+
+- name:                       "Update default security list"
+  oracle.oci.oci_network_security_list:
+    region:                   "{{ region }}"
+    display_name:             "Default-Security-List-for-LHR-NP-LAB03-VCN-02"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    id:                       "{{ vcn_result.vcn.default_security_list_id }}"
+    state:                    "present"
+    ingress_security_rules:
+      - source:               "0.0.0.0/0"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "6"
+        tcp_options:
+          destination_port_range:
+            min:              "22"
+            max:              "22"
+      - source:               "0.0.0.0/0"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          code:               "4"
+          type:               "3"
+      - source:               "10.0.0.0/16"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          type:               "3"
+      - source:               "172.17.0.0/24"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          type:               "8"
+    egress_security_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        protocol:             "all"
+        is_stateless:         false
+
+- name:                       "Create Public Subnet"
+  oracle.oci.oci_network_subnet:
+    region:                   "{{ region }}"
+    cidr_block:               "10.0.0.0/24"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "public-subnet-LHR-NP-LAB03-VCN-02"
+    prohibit_public_ip_on_vnic: false
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    state:                    "present"
+    dns_label:                "public"
+
+- name:                       "Create route table for private subnet"
+  oracle.oci.oci_network_route_table:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "route table for private subnet in LHR-NP-LAB03-VCN-02"
+    state:                    "present"
+    route_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ natg_result.nat_gateway.id }}"
+      - destination:          "all-lhr-services-in-oracle-services-network"
+        destination_type:     "SERVICE_CIDR_BLOCK"
+        network_entity_id:    "{{ sg_result.service_gateway.id }}"
+  register:                   rt_result
+
+- name:                       "Create Private Subnet"
+  oracle.oci.oci_network_subnet:
+    region:                   "{{ region }}"
+    cidr_block:               "10.0.1.0/24"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "Private-subnet-LHR-NP-LAB03-VCN-02"
+    prohibit_public_ip_on_vnic: true
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    dns_label:                "private"
+    state:                    "present"
+    route_table_id:           "{{ rt_result.route_table.id }}"
+    security_list_ids:
+      -                       "{{ sl_result.security_list.id }}"
+
+- name:                       "Create Dynamic Routing Gateway"
+  oracle.oci.oci_network_drg:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "LHR-NP-LAB03-DRG-01"
+    state:                    "present"
+  register:                   drg2_result
+
+- name:                       "Update VCN default route table"
+  oracle.oci.oci_network_route_table:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    rt_id:                    "{{ vcn_result.vcn.default_route_table_id }}"
+    display_name:             "default route table for LHR-NP-LAB03-VCN-02"
+    state:                    "present"
+    route_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ ig_result.internet_gateway.id }}"
+      - destination:          "172.17.0.0/24"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ drg2_result.drg.id }}"
+
+- name:                       "Attach DRG to VCN 02"
+  oracle.oci.oci_network_drg_attachment:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "LHR-NP-LAB03-ATTCH-01"
+    drg_id:                   "{{ drg2_result.drg.id }}"
+    network_details:
+      id:                     "{{ vcn_result.vcn.id }}"
+      type:                   "VCN"
+    state:                    "present"
+
+- name:                       "Create a Remote Peering Connection"
+  oracle.oci.oci_network_remote_peering_connection:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "LHR-NP-LAB03-RPC-01"
+    drg_id:                   "{{ drg2_result.drg.id }}"
+  register:                   rpc2_result
+
+- name:                       "Connect Ashburn to London"
+  oracle.oci.oci_network_remote_peering_connection_actions:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    action:                   "connect"
+    remote_peering_connection_id: "{{ rpc2_result.remote_peering_connection.id }}"
+    peer_region_name:         "us-ashburn-1"
+    peer_id:                  "{{ rpc1_result.remote_peering_connection.id }}"
+
+...

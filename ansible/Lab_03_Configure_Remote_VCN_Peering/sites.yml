@@ -1,0 +1,24 @@
+---
+- name:                           "Lab 03: Configure Remote VCN Peering"
+  hosts:                          localhost
+  tasks:
+    - name:                       "Load Global Settings"
+      ansible.builtin.include_vars:
+        file:                     settings.yml
+    
+    - name:                       "Set Global Variables"
+      ansible.builtin.set_fact:
+        region:                   "us-ashburn-1"
+
+    - name:                       "Import Tasks to Create VCN 01"
+      ansible.builtin.import_tasks:
+        file:                     "vcn01.yml"
+    
+    - name:                       "Set Global Variables"
+      ansible.builtin.set_fact:
+        region:                   "uk-london-1"
+
+    - name:                       "Import Tasks to Create VCN 02"
+      ansible.builtin.import_tasks:
+        file:                     "vcn02.yml"
+...
