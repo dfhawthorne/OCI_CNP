@@ -1,0 +1,183 @@
+---
+- name:                       Create a VCN
+  oracle.oci.oci_network_vcn:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "IAD-NP-LAB02-VCN-01"
+    cidr_block:               "172.16.0.0/16"
+    dns_label:                "iadnplab02vcn01"
+    state:                    "present"
+  register:                   vcn_result
+
+- name:                       "Create NAT Gateway"
+  oracle.oci.oci_network_nat_gateway:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "NAT-gateway-IAD-NP-LAB02-VCN-01"
+    state:                    "present"
+  register:                   natg_result
+
+- name:                       "Create Internet Gateway"
+  oracle.oci.oci_network_internet_gateway:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "Internet-gateway-IAD-NP-LAB02-VCN-01"
+    is_enabled:               true
+    state:                    "present"
+  register:                   ig_result
+
+- name:                       "Create Service Gateway"
+  oracle.oci.oci_network_service_gateway:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "Service-gateway-IAD-NP-LAB02-VCN-01"
+    services:
+      - service_id:           "ocid1.service.oc1.iad.aaaaaaaam4zfmy2rjue6fmglumm3czgisxzrnvrwqeodtztg7hwa272mlfna"
+    state:                    "present"
+  register:                   sg_result
+
+- name:                       "Create DHCP Options"
+  oracle.oci.oci_network_dhcp_options:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "DHCP-Options-for-IAD-NP-LAB02-VCN-01"
+    options:
+      - type:                 "DomainNameServer"
+        server_type:          "VcnLocalPlusInternet"
+      - type:                 "SearchDomain"
+        search_domain_names:  ["iadnplab02vcn01.oraclevcn.com"]
+    state:                    "present"
+  register:                   dhcp_result
+
+- name:                       "Create a security list for the private subnet"
+  oracle.oci.oci_network_security_list:
+    region:                   "{{ region }}"
+    display_name:             "security list for private subnet-IAD-NP-LAB02-VCN-01"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    state:                    "present"
+    ingress_security_rules:
+      - source:               "172.16.0.0/16"
+        protocol:             "6"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        tcp_options:
+          destination_port_range:
+            min:              "22"
+            max:              "22"
+    egress_security_rules:
+      - destination:          "0.0.0.0/0"
+        protocol:             "all"
+        destination_type:     "CIDR_BLOCK"
+        is_stateless:         false
+  register:                   sl_result
+
+- name:                       "Update default security list"
+  oracle.oci.oci_network_security_list:
+    region:                   "{{ region }}"
+    display_name:             "Default-Security-List-for-IAD-NP-LAB02-VCN-01"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    id:                       "{{ vcn_result.vcn.default_security_list_id }}"
+    state:                    "present"
+    ingress_security_rules:
+      - source:               "0.0.0.0/0"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "6"
+        tcp_options:
+          destination_port_range:
+            min:              "22"
+            max:              "22"
+      - source:               "0.0.0.0/0"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          code:               "4"
+          type:               "3"
+      - source:               "172.16.0.0/16"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          type:               "3"
+      - source:               "192.168.0.0/16"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          type:               "8"
+    egress_security_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        protocol:             "all"
+        is_stateless:         false
+
+- name:                       "Update VCN default route table"
+  oracle.oci.oci_network_route_table:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    rt_id:                    "{{ vcn_result.vcn.default_route_table_id }}"
+    display_name:             "default route table for IAD-NP-LAB02-VCN-01"
+    state:                    "present"
+    route_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ ig_result.internet_gateway.id }}"
+
+- name:                       "Create Public Subnet"
+  oracle.oci.oci_network_subnet:
+    region:                   "{{ region }}"
+    cidr_block:               "172.16.0.0/24"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "public-subnet-IAD-NP-LAB02-VCN-01"
+    prohibit_public_ip_on_vnic: false
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    state:                    "present"
+    dns_label:                "public"
+
+- name:                       "Create route table for private subnet"
+  oracle.oci.oci_network_route_table:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "route table for private subnet in IAD-NP-LAB02-VCN-01"
+    state:                    "present"
+    route_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ natg_result.nat_gateway.id }}"
+      - destination:          "all-iad-services-in-oracle-services-network"
+        destination_type:     "SERVICE_CIDR_BLOCK"
+        network_entity_id:    "{{ sg_result.service_gateway.id }}"
+  register:                   rt_result
+
+- name:                       "Create Private Subnet"
+  oracle.oci.oci_network_subnet:
+    region:                   "{{ region }}"
+    cidr_block:               "172.16.1.0/24"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "Private-subnet-IAD-NP-LAB02-VCN-01"
+    prohibit_public_ip_on_vnic: true
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    dns_label:                "private"
+    state:                    "present"
+    route_table_id:           "{{ rt_result.route_table.id }}"
+    security_list_ids:
+      -                       "{{ sl_result.security_list.id }}"
+
+- name:                       "Create Local Peering Gateway"
+  oracle.oci.oci_network_local_peering_gateway:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_result.vcn.id }}"
+    display_name:             "IAD-NP-LAB02-LPG-01"
+    state:                    "present"
+  register:                   lpg_result
+...
