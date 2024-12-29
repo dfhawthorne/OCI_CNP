@@ -1,0 +1,1 @@
+../terraform/Lab_04_Configure_IPv6_on_two_VCNs_and_communicate_them_with_ICMPv6/README.md
