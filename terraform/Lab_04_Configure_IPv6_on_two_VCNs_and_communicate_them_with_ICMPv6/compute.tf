@@ -77,3 +77,31 @@ resource "oci_core_instance" "vm_02" {
         ssh_authorized_keys     = file("~/.ssh/id_rsa.pub")
     }
 }
+
+# ------------------------------------------------------------------------------
+# Retrieve generated IPV6 Addresses
+# ------------------------------------------------------------------------------
+
+data "oci_core_vnic_attachments" "vm_01_vnic_attachments" {
+    provider                    = oci.ashburn
+    compartment_id              = var.compartment_id
+    instance_id                 = oci_core_instance.vm_01.id
+}
+
+data "oci_core_ipv6s" "vm_01_ipv6s" {
+    provider                    = oci.ashburn
+    subnet_id                   = oci_core_subnet.public-subnet-01.id
+    vnic_id                     = data.oci_core_vnic_attachments.vm_01_vnic_attachments.vnic_attachments[0].vnic_id
+}
+
+data "oci_core_vnic_attachments" "vm_02_vnic_attachments" {
+    provider                    = oci.ashburn
+    compartment_id              = var.compartment_id
+    instance_id                 = oci_core_instance.vm_02.id
+}
+
+data "oci_core_ipv6s" "vm_02_ipv6s" {
+    provider                    = oci.ashburn
+    subnet_id                   = oci_core_subnet.public-subnet-02.id
+    vnic_id                     = data.oci_core_vnic_attachments.vm_02_vnic_attachments.vnic_attachments[0].vnic_id
+}

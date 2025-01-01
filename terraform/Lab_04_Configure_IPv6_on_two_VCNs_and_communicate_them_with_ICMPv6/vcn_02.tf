@@ -32,9 +32,9 @@ resource "oci_core_internet_gateway" "Internet-gateway-02" {
 # DHCP Options
 # ------------------------------------------------------------------------------
 
-resource "oci_core_dhcp_options" "DHCP-Options-02" {
+resource "oci_core_default_dhcp_options" "DHCP-Options-02" {
     provider                    = oci.ashburn
-    vcn_id                      = oci_core_vcn.vcn_02.id
+    manage_default_resource_id  = oci_core_vcn.vcn_02.default_dhcp_options_id
     compartment_id              = var.compartment_id
     display_name                = "DHCP Options for IAD-NP-LAB04-VCN-02"
     domain_name_type            = "CUSTOM_DOMAIN"
@@ -60,16 +60,11 @@ resource "oci_core_subnet" "public-subnet-02" {
     provider                    = oci.ashburn
     cidr_block                  = "10.2.0.0/24"
     compartment_id              = var.compartment_id
-    dhcp_options_id             = oci_core_dhcp_options.DHCP-Options-02.id
     display_name                = "IAD-NP-LAB04-VCN-02-SNT-01"
     dns_label                   = "public02"
     ipv6cidr_block              = cidrsubnet(oci_core_vcn.vcn_02.ipv6cidr_blocks[0], 8, parseint("7e",16))
     prohibit_internet_ingress   = "false"
     prohibit_public_ip_on_vnic  = "false"
-    route_table_id              = oci_core_route_table.default-route-table-02.id
-    security_list_ids           = [
-        oci_core_vcn.vcn_02.default_security_list_id,
-    ]
     vcn_id                      = oci_core_vcn.vcn_02.id
 }
 
@@ -77,7 +72,7 @@ resource "oci_core_subnet" "public-subnet-02" {
 # Route tables
 # ------------------------------------------------------------------------------
 
-resource "oci_core_route_table" "default-route-table-02" {
+resource "oci_core_default_route_table" "default-route-table-02" {
     provider                    = oci.ashburn
     compartment_id              = var.compartment_id
     display_name                = "default route table for IAD-NP-LAB04-VCN-02"
@@ -86,7 +81,17 @@ resource "oci_core_route_table" "default-route-table-02" {
         destination_type        = "CIDR_BLOCK"
         network_entity_id       = oci_core_internet_gateway.Internet-gateway-02.id
     }
-    vcn_id                      = oci_core_vcn.vcn_02.id
+    route_rules {
+        destination_type        = "CIDR_BLOCK"
+        destination             = "10.1.0.0/16"
+        network_entity_id       = oci_core_drg.drg.id
+    }
+    route_rules {
+        destination_type        = "CIDR_BLOCK"
+        destination             = oci_core_vcn.vcn_01.ipv6cidr_blocks[0]
+        network_entity_id       = oci_core_drg.drg.id
+    }
+    manage_default_resource_id  = oci_core_vcn.vcn_02.default_route_table_id
 }
 
 # ------------------------------------------------------------------------------
@@ -99,6 +104,12 @@ resource "oci_core_default_security_list" "Default-Security-List-02" {
     display_name                = "Default Security List for IAD-NP-LAB04-VCN-02"
     egress_security_rules {
         destination             = "0.0.0.0/0"
+        destination_type        = "CIDR_BLOCK"
+        protocol                = "all"
+        stateless               = "false"
+    }
+    egress_security_rules {
+        destination             = oci_core_vcn.vcn_01.ipv6cidr_blocks[0]
         destination_type        = "CIDR_BLOCK"
         protocol                = "all"
         stateless               = "false"
@@ -130,6 +141,22 @@ resource "oci_core_default_security_list" "Default-Security-List-02" {
         }
         protocol                = "1"
         source                  = "10.2.0.0/16"
+        source_type             = "CIDR_BLOCK"
+        stateless               = "false"
+    }
+    ingress_security_rules {
+        icmp_options {
+            code                = "-1"
+            type                = "8"
+        }
+        protocol                = "1"
+        source                  = "10.1.0.0/16"
+        source_type             = "CIDR_BLOCK"
+        stateless               = "false"
+    }
+    ingress_security_rules {
+        protocol                = "58"
+        source                  = oci_core_vcn.vcn_01.ipv6cidr_blocks[0]
         source_type             = "CIDR_BLOCK"
         stateless               = "false"
     }

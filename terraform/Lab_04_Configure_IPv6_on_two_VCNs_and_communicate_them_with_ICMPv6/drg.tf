@@ -17,6 +17,7 @@ resource "oci_core_drg_attachment" "drg_atch_01" {
     provider                = oci.ashburn
     drg_id                  = oci_core_drg.drg.id
     display_name            = "IAD-NP-LAB04-VCN-01-ATCH"
+    drg_route_table_id      = oci_core_drg_route_table.drg_route_table.id
     network_details         {
         id                  = oci_core_vcn.vcn_01.id
         type                = "VCN"
@@ -27,35 +28,32 @@ resource "oci_core_drg_attachment" "drg_atch_02" {
     provider                = oci.ashburn
     drg_id                  = oci_core_drg.drg.id
     display_name            = "IAD-NP-LAB04-VCN-02-ATCH"
+    drg_route_table_id      = oci_core_drg_route_table.drg_route_table.id
     network_details         {
         id                  = oci_core_vcn.vcn_02.id
         type                = "VCN"
     }
 }
 
-resource "oci_core_route_table" "route_table_01" {
+resource "oci_core_drg_route_table" "drg_route_table" {
     provider                = oci.ashburn
-    compartment_id          = var.compartment_id
-    vcn_id                  = oci_core_vcn.vcn_01.id
-    display_name            = "route-table-vcn_01"
-
-    route_rules {
-        destination_type    = "CIDR_BLOCK"
-        destination         = oci_core_vcn.vcn_02.ipv6cidr_blocks[0]
-        network_entity_id   = oci_core_drg.drg.id
-    }
+    drg_id                  = oci_core_drg.drg.id
+    import_drg_route_distribution_id = oci_core_drg_route_distribution.drg_route_distribution.id
 }
 
-resource "oci_core_route_table" "route_table_02" {
-    provider                = oci.ashburn
-    compartment_id          = var.compartment_id
-    vcn_id                  = oci_core_vcn.vcn_02.id
-    display_name            = "route-table-vcn_02"
+resource "oci_core_drg_route_distribution" "drg_route_distribution" {
+    provider                            = oci.ashburn
+    distribution_type                   = "IMPORT"
+    drg_id                              = oci_core_drg.drg.id
+}
 
-    route_rules {
-        destination_type    = "CIDR_BLOCK"
-        destination         = oci_core_vcn.vcn_01.ipv6cidr_blocks[0]
-        network_entity_id   = oci_core_drg.drg.id
-    }
+resource "oci_core_drg_route_distribution_statement" "rd_stmt_01" {
+    provider                            = oci.ashburn
+    drg_route_distribution_id           = oci_core_drg_route_distribution.drg_route_distribution.id
+    action                              = "ACCEPT"
+    match_criteria                      {
+        match_type                      = "MATCH_ALL"
+        }
+    priority                            = 1
 }
 
