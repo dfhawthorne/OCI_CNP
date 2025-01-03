@@ -1,0 +1,92 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 05: Design and Implement a Real-Network Architecture: Configuring private
+#         DNS Zones, views, resolvers, listeners and forwarders
+# ------------------------------------------------------------------------------
+- name:                       Create a VCN
+  oracle.oci.oci_network_vcn:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "IAD-NP-LAB05-VCN-01"
+    cidr_blocks:
+      -                       "10.0.0.0/16"
+    dns_label:                "iadnplab05vcn01"
+    state:                    "present"
+  register:                   vcn_01
+
+- name:                       "Display VCN 01 Configuration"
+  ansible.builtin.debug:
+    var:                      vcn_01.vcn
+    verbosity:                1
+
+- name:                       "Create Internet Gateway"
+  oracle.oci.oci_network_internet_gateway:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+    display_name:             "IAD-NP-LAB05-IG-01"
+    is_enabled:               true
+    state:                    "present"
+  register:                   ig_01
+
+- name:                       "Check for Existing LPG"
+  oracle.oci.oci_network_local_peering_gateway_facts:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+    display_name:             "IAD-NP-LAB05-LPG-01"
+  register:                   lpgs_01
+
+- name:                       "Extract LPG Information"
+  ansible.builtin.set_fact:
+    lpg_01_id:                "{{ lpgs_01.local_peering_gateways[0].id }}"
+  when:
+    - lpgs_01.local_peering_gateways | length != 0
+
+- name:                       "Create Local Peering Gateway"
+  oracle.oci.oci_network_local_peering_gateway:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+    display_name:             "IAD-NP-LAB05-LPG-01"
+    state:                    "present"
+  register:                   lpg_01
+  when:
+    - lpgs_01.local_peering_gateways | length == 0
+
+- name:                       "Extract LPG Information"
+  ansible.builtin.set_fact:
+    lpg_01_id:                "{{ lpg_01.local_peering_gateway.id }}"
+  when:
+    - lpg_01.local_peering_gateway.id is defined
+
+- name:                       "Create DHCP Options"
+  oracle.oci.oci_network_dhcp_options:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+    display_name:             "IAD-NP-LAB05-DHCP-01"
+    options:
+      - type:                 "DomainNameServer"
+        server_type:          "VcnLocalPlusInternet"
+      - type:                 "SearchDomain"
+        search_domain_names:  ["iadnplab05vcn01.oraclevcn.com"]
+    state:                    "present"
+  register:                   dhcp_01
+
+- name:                       "Calculate IPv4 subnet"
+  ansible.builtin.set_fact:
+    public_subnet_cidr_01:    "{{ vcn_01.vcn.cidr_blocks[0] | ansible.utils.ipsubnet(24, 0) }}"
+
+- name:                       "Create Public Subnet"
+  oracle.oci.oci_network_subnet:
+    region:                   "{{ region }}"
+    cidr_block:               "{{ public_subnet_cidr_01 }}"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "IAD-NP-LAB05-SNET-01"
+    prohibit_public_ip_on_vnic: false
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+    state:                    "present"
+    dns_label:                "public"
+  register:                   public_subnet_01
+...

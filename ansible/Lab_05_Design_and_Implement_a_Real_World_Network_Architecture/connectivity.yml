@@ -1,0 +1,129 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 05: Design and Implement a Real-Network Architecture: Configuring private
+#         DNS Zones, views, resolvers, listeners and forwarders
+# ------------------------------------------------------------------------------
+- name:                       "Update VCN default route table for VCN 01"
+  oracle.oci.oci_network_route_table:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+    rt_id:                    "{{ vcn_01.vcn.default_route_table_id }}"
+    display_name:             "default route table for IAD-NP-LAB05-VCN-01"
+    state:                    "present"
+    route_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ ig_01.internet_gateway.id }}"
+      - destination:          "{{ vcn_02.vcn.cidr_blocks[0] }}"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ lpg_01_id }}"
+
+- name:                       "Update VCN default route table for VCN 02"
+  oracle.oci.oci_network_route_table:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_02.vcn.id }}"
+    rt_id:                    "{{ vcn_02.vcn.default_route_table_id }}"
+    display_name:             "default route table for IAD-NP-LAB05-VCN-01"
+    state:                    "present"
+    route_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ ig_02.internet_gateway.id }}"
+      - destination:          "{{ vcn_01.vcn.cidr_blocks[0] }}"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ lpg_02_id }}"
+
+- name:                       "Update default security list for VCN 01"
+  oracle.oci.oci_network_security_list:
+    region:                   "{{ region }}"
+    display_name:             "IAD-NP-LAB05-SL-01"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+    id:                       "{{ vcn_01.vcn.default_security_list_id }}"
+    state:                    "present"
+    ingress_security_rules:
+      - source:               "0.0.0.0/0"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "6"
+        tcp_options:
+          destination_port_range:
+            min:              "22"
+            max:              "22"
+      - source:               "0.0.0.0/0"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          code:               "4"
+          type:               "3"
+      - source:               "{{ vcn_01.vcn.cidr_blocks[0] }}"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          type:               "3"
+      - source:               "{{ vcn_02.vcn.cidr_blocks[0] }}"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          type:               "8"
+    egress_security_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        protocol:             "all"
+        is_stateless:         false
+
+- name:                       "Update default security list for VCN 02"
+  oracle.oci.oci_network_security_list:
+    region:                   "{{ region }}"
+    display_name:             "IAD-NP-LAB05-SL-02"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_02.vcn.id }}"
+    id:                       "{{ vcn_02.vcn.default_security_list_id }}"
+    state:                    "present"
+    ingress_security_rules:
+      - source:               "0.0.0.0/0"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "6"
+        tcp_options:
+          destination_port_range:
+            min:              "22"
+            max:              "22"
+      - source:               "0.0.0.0/0"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          code:               "4"
+          type:               "3"
+      - source:               "{{ vcn_02.vcn.cidr_blocks[0] }}"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          type:               "3"
+      - source:               "{{ vcn_01.vcn.cidr_blocks[0] }}"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         false
+        protocol:             "1"
+        icmp_options:
+          type:               "8"
+    egress_security_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        protocol:             "all"
+        is_stateless:         false
+
+- name:                       "Connect LPGs"
+  oracle.oci.oci_network_local_peering_gateway_actions:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    action:                   "connect"
+    local_peering_gateway_id: "{{ lpg_01_id }}"
+    peer_id:                  "{{ lpg_02_id }}"
+...

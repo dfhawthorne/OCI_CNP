@@ -1,0 +1,4 @@
+test*
+*.log
+.ssh
+access_vm.sh

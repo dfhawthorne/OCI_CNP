@@ -1,0 +1,26 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 05: Design and Implement a Real-Network Architecture: Configuring private
+#         DNS Zones, views, resolvers, listeners and forwarders
+# ------------------------------------------------------------------------------
+- name:                           "Lab 05: Design and Implement a Real-Network Architecture: Configuring private DNS Zones, views, resolvers, listeners and forwarders"
+  hosts:                          localhost
+  tasks:
+    - name:                       "Load Global Settings"
+      ansible.builtin.include_vars:
+        file:                     "settings.yml"
+
+    - name:                       "Include Tasks to Create VCNs and connect them"
+      ansible.builtin.include_tasks:
+        file:                     "{{ task_file }}"
+      loop:
+        -                         "vcn01.yml"
+        -                         "vcn02.yml"
+        -                         "connectivity.yml"
+        -                         "compute.yml"
+        -                         "validate_setup.yml"
+      loop_control:
+        loop_var:                 task_file
+      vars:
+        region:                   "us-ashburn-1"
+...

@@ -1,0 +1,72 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 05: Design and Implement a Real-Network Architecture: Configuring private
+#         DNS Zones, views, resolvers, listeners and forwarders
+# ------------------------------------------------------------------------------
+- name:                             "Get Availability Domains"
+  oracle.oci.oci_identity_availability_domain_facts:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+  register:                         ads
+
+- name:                             "Set Compute Global Variables"
+  ansible.builtin.set_fact:
+    shape_name:                     "VM.Standard.A1.Flex"
+
+- name:                             "Get Available Compute Images"
+  oracle.oci.oci_compute_image_facts:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    operating_system:               "Oracle Linux"
+    operating_system_version:       "8"
+    shape:                          "{{ shape_name }}"
+    sort_by:                        "TIMECREATED"
+    sort_order:                     "DESC"
+  register:                         images
+
+- name:                             "Find Compatible Shapes"
+  oracle.oci.oci_compute_image_shape_compatibility_entry_facts:
+    region:                         "{{ region }}"
+    image_id:                       "{{ images.images[0].id }}"
+    shape_name:                     "{{ shape_name }}"
+  register:                         shapes
+
+- name:                             "Ensure Compute Shape is compatible with selected image"
+  ansible.builtin.assert:
+    that:
+      - shapes.image_shape_compatibility_entries | length > 0
+    fail_msg:                       "No compatible Compute Image found for {{ shape_name }}"
+
+- name:                             "Create VMs in First Availability Domain"
+  oracle.oci.oci_compute_instance:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    availability_domain:            "{{ ads.availability_domains[0].name }}"
+    create_vnic_details:
+      assign_public_ip:             true
+      subnet_id:                    "{{ vm.subnet_id }}"
+    shape:                          "{{ shape_name }}"
+    source_details:
+      source_type:                  "image"
+      image_id:                     "{{ images.images[0].id }}"
+    display_name:                   "{{ vm.display_name }}"
+    metadata:
+      ssh_authorized_keys:          "{{ lookup('file', '{{ ansible_env.HOME }}/.ssh/id_rsa.pub') }}"
+    shape_config:
+      ocpus:                        1
+      memory_in_gbs:                6
+    state:                          "present"
+  loop:
+    - display_name:                 "IAD-NP-LAB04-VM-01"
+      subnet_id:                    "{{ public_subnet_01.subnet.id }}"
+    - display_name:                 "IAD-NP-LAB04-VM-02"
+      subnet_id:                    "{{ public_subnet_02.subnet.id }}"
+  loop_control:
+    loop_var:                       vm
+  register:                         vms
+
+- name:                             "Display VM Configurations"
+  ansible.builtin.debug:
+    var:                            vms
+    verbosity:                      1
+...
