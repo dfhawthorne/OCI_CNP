@@ -1,0 +1,13 @@
+# ------------------------------------------------------------------------------
+# SSH Configuration
+# ------------------------------------------------------------------------------
+Host *
+    IdentityFile {{ ansible_env.HOME }}/.ssh/id_rsa
+    StrictHostKeyChecking=accept-new
+    User opc
+    UserKnownHostsFile .ssh/known_hosts
+Host VM01
+    Hostname {{ vms.results[0].instance.primary_public_ip }}
+Host VM02
+    Hostname {{ vms.results[1].instance.primary_public_ip }}
+

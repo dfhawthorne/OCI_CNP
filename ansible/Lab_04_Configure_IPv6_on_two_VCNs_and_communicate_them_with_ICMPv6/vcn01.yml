@@ -1,0 +1,62 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 04: Virtual Cloud Network (VCN): Configure IPv6 on two VCNs and
+#         communicate between them with ICMPv6
+# ------------------------------------------------------------------------------
+- name:                       Create a VCN
+  oracle.oci.oci_network_vcn:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "IAD-NP-LAB04-VCN-01"
+    cidr_block:               "10.1.0.0/16"
+    dns_label:                "iadnplab04vcn01"
+    is_ipv6_enabled:          true
+    state:                    "present"
+  register:                   vcn_01
+
+- name:                       "Display VCN 01 Configuration"
+  ansible.builtin.debug:
+    var:                      vcn_01.vcn
+    verbosity:                1
+
+- name:                       "Create Internet Gateway"
+  oracle.oci.oci_network_internet_gateway:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+    display_name:             "Internet-gateway-IAD-NP-LAB04-VCN-01"
+    is_enabled:               true
+    state:                    "present"
+  register:                   ig_01
+
+- name:                       "Create DHCP Options"
+  oracle.oci.oci_network_dhcp_options:
+    region:                   "{{ region }}"
+    compartment_id:           "{{ compartment_id }}"
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+    display_name:             "DHCP-Options-for-IAD-NP-LAB04-VCN-01"
+    options:
+      - type:                 "DomainNameServer"
+        server_type:          "VcnLocalPlusInternet"
+      - type:                 "SearchDomain"
+        search_domain_names:  ["iadnplab04vcn01.oraclevcn.com"]
+    state:                    "present"
+  register:                   dhcp_result
+
+- name:                       "Calculate IPv6 subnet"
+  ansible.builtin.set_fact:
+    ipv6_subnet:              "{{ vcn_01.vcn.ipv6_cidr_blocks[0] | ansible.utils.ipsubnet(64, 126) }}"
+
+- name:                       "Create Public Subnet"
+  oracle.oci.oci_network_subnet:
+    region:                   "{{ region }}"
+    cidr_block:               "10.1.0.0/24"
+    compartment_id:           "{{ compartment_id }}"
+    display_name:             "public-subnet-IAD-NP-LAB04-VCN-01"
+    prohibit_public_ip_on_vnic: false
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+    state:                    "present"
+    ipv6_cidr_block:          "{{ ipv6_subnet }}"
+    dns_label:                "public"
+  register:                   public_subnet_01
+...

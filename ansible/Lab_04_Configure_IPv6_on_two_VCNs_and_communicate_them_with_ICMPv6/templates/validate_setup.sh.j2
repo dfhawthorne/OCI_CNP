@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# ------------------------------------------------------------------------------
+# Validate Lab setup by pinging 
+# ------------------------------------------------------------------------------
+
+printf "\nPinging from VM01\n\n"
+
+ssh -F .ssh/config VM01 <<DONE
+sudo dhclient -6 $(ip a|sed -nre 's!.*: (enp.*):.*!\1!p')
+printf "\nPinging VM02\n\n"
+ping -c 10 -4 {{ vms.results[1].instance.primary_private_ip }}
+ping -c 10 -6 {{ vm02_ipv6.ipv6.ip_address }}
+DONE
+
+printf "\nPinging from VM02\n\n"
+
+ssh -F .ssh/config VM02 <<DONE
+sudo dhclient -6 $(ip a|sed -nre 's!.*: (enp.*):.*!\1!p')
+printf "\nPinging VM01\n\n"
+ping -c 10 -4 {{ vms.results[0].instance.primary_private_ip }}
+ping -c 10 -6 {{ vm01_ipv6.ipv6.ip_address }}
+DONE

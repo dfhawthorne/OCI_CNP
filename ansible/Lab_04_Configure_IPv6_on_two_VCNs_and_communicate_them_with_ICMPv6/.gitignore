@@ -1,0 +1,3 @@
+.ssh
+test*
+validate_setup.sh

@@ -1,0 +1,110 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 04: Virtual Cloud Network (VCN): Configure IPv6 on two VCNs and
+#         communicate between them with ICMPv6
+# ------------------------------------------------------------------------------
+- name:                             "Get Availability Domains"
+  oracle.oci.oci_identity_availability_domain_facts:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+  register:                         ads
+
+- name:                             "Set Compute Global Variables"
+  ansible.builtin.set_fact:
+    shape_name:                     "VM.Standard.A1.Flex"
+
+- name:                             "Get Available Compute Images"
+  oracle.oci.oci_compute_image_facts:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    operating_system:               "Oracle Linux"
+    operating_system_version:       "8"
+    shape:                          "{{ shape_name }}"
+    sort_by:                        "TIMECREATED"
+    sort_order:                     "DESC"
+  register:                         images
+
+- name:                             "Find Compatible Shapes"
+  oracle.oci.oci_compute_image_shape_compatibility_entry_facts:
+    region:                         "{{ region }}"
+    image_id:                       "{{ images.images[0].id }}"
+    shape_name:                     "{{ shape_name }}"
+  register:                         shapes
+
+- name:                             "Ensure Compute Shape is compatible with selected image"
+  ansible.builtin.assert:
+    that:
+      - shapes.image_shape_compatibility_entries | length > 0
+    fail_msg:                       "No compatible Compute Image found for {{ shape_name }}"
+
+- name:                             "Create VMs in First Availability Domain"
+  oracle.oci.oci_compute_instance:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    availability_domain:            "{{ ads.availability_domains[0].name }}"
+    create_vnic_details:
+      assign_public_ip:             true
+      subnet_id:                    "{{ vm.subnet_id }}"
+    shape:                          "{{ shape_name }}"
+    source_details:
+      source_type:                  "image"
+      image_id:                     "{{ images.images[0].id }}"
+    display_name:                   "{{ vm.display_name }}"
+    metadata:
+      ssh_authorized_keys:          "{{ lookup('file', '{{ ansible_env.HOME }}/.ssh/id_rsa.pub') }}"
+    shape_config:
+      ocpus:                        1
+      memory_in_gbs:                6
+    state:                          "present"
+  loop:
+    - display_name:                 "IAD-NP-LAB04-VM-01"
+      subnet_id:                    "{{ public_subnet_01.subnet.id }}"
+    - display_name:                 "IAD-NP-LAB04-VM-02"
+      subnet_id:                    "{{ public_subnet_02.subnet.id }}"
+  loop_control:
+    loop_var:                       vm
+  register:                         vms
+
+- name:                             "Display VM Configurations"
+  ansible.builtin.debug:
+    var:                            vms
+    verbosity:                      1
+
+- name:                             "Get all VNICs for VM01"
+  oracle.oci.oci_compute_vnic_attachment_facts:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    instance_id:                    "{{ vms.results[0].instance.id }}"
+  register:                         vnic_01
+
+- name:                             "Display Available VNICs for VM01"
+  ansible.builtin.debug:
+    var:                            vnic_01
+    verbosity:                      1
+
+- name:                             "Create ipv6 address for VM01"
+  oracle.oci.oci_network_ipv6:
+    region:                         "{{ region }}"
+    vnic_id:                        "{{ vnic_01.vnic_attachments[0].vnic_id }}"
+    state:                          present
+  register:                         vm01_ipv6
+
+- name:                             "Display ipv6 address for VM01"
+  ansible.builtin.debug:
+    var:                            vm01_ipv6
+    verbosity:                      1
+
+- name:                             "Get all VNICs for VM01"
+  oracle.oci.oci_compute_vnic_attachment_facts:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    instance_id:                    "{{ vms.results[1].instance.id }}"
+  register:                         vnic_02
+
+- name:                             "Create ipv6 address for VM02"
+  oracle.oci.oci_network_ipv6:
+    region:                         "{{ region }}"
+    vnic_id:                        "{{ vnic_02.vnic_attachments[0].vnic_id }}"
+    state:                          present
+  register:                         vm02_ipv6
+...

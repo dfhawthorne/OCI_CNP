@@ -1,0 +1,37 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 04: Virtual Cloud Network (VCN): Configure IPv6 on two VCNs and
+#         communicate between them with ICMPv6
+# ------------------------------------------------------------------------------
+- name:                           "Create SSH directory"
+  ansible.builtin.file:
+    path:                         .ssh
+    mode:                         0700
+    state:                        directory
+
+- name:                           "Create SSH Config File"
+  ansible.builtin.template:
+    src:                          ssh_config.j2
+    dest:                         .ssh/config
+    mode:                         0600
+
+- name:                           "Create SSH Validation Script"
+  ansible.builtin.template:
+    src:                          validate_setup.sh.j2
+    dest:                         validate_setup.sh
+    mode:                         0644
+
+- name:                           "Run SSH Validation Script"
+  ansible.builtin.command:        bash ./validate_setup.sh
+  register:                       validation
+
+- name:                           "Display Validation Errors"
+  ansible.builtin.debug:
+    var:                          validation.stderr_lines
+    verbosity:                    1
+
+- name:                           "Display Validation Results"
+  ansible.builtin.debug:
+    var:                          validation.stdout_lines
+    verbosity:                    0
+...

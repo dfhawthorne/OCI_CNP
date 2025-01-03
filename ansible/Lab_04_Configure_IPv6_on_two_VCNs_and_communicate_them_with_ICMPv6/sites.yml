@@ -1,0 +1,26 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 04: Virtual Cloud Network (VCN): Configure IPv6 on two VCNs and
+#         communicate between them with ICMPv6
+# ------------------------------------------------------------------------------
+- name:                           "Lab 04: Configure IPv6 on two VCNs and communicate between them with ICMPv6"
+  hosts:                          localhost
+  tasks:
+    - name:                       "Load Global Settings"
+      ansible.builtin.include_vars:
+        file:                     "settings.yml"
+
+    - name:                       "Include Tasks to Create VCNs and connect them"
+      ansible.builtin.include_tasks:
+        file:                     "{{ task_file }}"
+      loop:
+        -                         "vcn01.yml"
+        -                         "vcn02.yml"
+        -                         "connectivity.yml"
+        -                         "compute.yml"
+        -                         "validate_setup.yml"
+      loop_control:
+        loop_var:                 task_file
+      vars:
+        region:                   "us-ashburn-1"
+...
