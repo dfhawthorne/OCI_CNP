@@ -47,40 +47,28 @@ terraform apply -auto-approve
 ```
 
 ```bash
-./save_private_key.sh
+./setup_ssh.sh
 ```
 
-In the private view for `IAD-NP-LAB-05-VCN-01`, create a DNS zone association with `zone-b.local`.
-
 ## Testing
-
-Wait for a few minutes to allow DNS update propagation.
 
 Use the following command to test the configuration
 
 ```bash
-./access_vm.sh
+./validate_setup.sh 
 ```
 
 Sample session is:
 
 ```text
+Testing from VM01
+
 Pseudo-terminal will not be allocated because stdin is not a terminal.
-The authenticity of host '150.136.112.206 (150.136.112.206)' can't be established.
-ED25519 key fingerprint is SHA256:Mvv5RM7kbbId2ErgeBIPK8G3yiaXc+iiPNvC721wjyk.
-This key is not known by any other names.
-Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
-Warning: Permanently added '150.136.112.206' (ED25519) to the list of known hosts.
+Warning: Permanently added '150.230.166.162' (ED25519) to the list of known hosts.
 Activate the web console with: systemctl enable --now cockpit.socket
 
 server01.zone-a.local has address 10.0.0.2
 zone-a.local name server vcn-dns.oraclevcn.com.
 zone-a.local has SOA record vcn-dns.oraclevcn.com. hostmaster.oracle.com. 2 3600 3600 3600 10
-Using domain server:
-Name: 172.16.0.53
-Address: 172.16.0.53#53
-Aliases: 
-
-server01.zone-b.local has address 172.16.0.123
 server01.zone-b.local has address 172.16.0.123
 ```
