@@ -3,13 +3,23 @@
 # Show the DRG status across multiple regions
 # ------------------------------------------------------------------------------
 
+import argparse
 import logging
 import oci
 import os.path
 
-# Enable debug logging
+# Interpret passed arguments
 
-verbose_mode = False
+parser = argparse.ArgumentParser(
+                    prog='show_drg_status',
+                    description='Shows the status of all DRGs in the selected regions')
+parser.add_argument('region', nargs='*')
+parser.add_argument('-v', '--verbose',
+                    action='store_true')  # on/off flag
+args = parser.parse_args()
+verbose_mode = args.verbose
+if verbose_mode:
+    print(args.region, args.verbose)
 
 if verbose_mode:
     logging.getLogger('oci').setLevel(logging.DEBUG)
@@ -105,9 +115,7 @@ def display_drg_details(client, drg_list):
 # Discover all DRGs in all three (3) regions
 # -----------------------------------------------------------------------------
 
-region_list = ["us-ashburn-1", "uk-london-1", "us-phoenix-1"]
-
-for region in region_list:
+for region in args.region:
     print(f"Region: {region}\n")
     mylearn_config['region']    = region
     oci.config.validate_config(mylearn_config)
