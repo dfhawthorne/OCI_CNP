@@ -113,9 +113,33 @@ for nsg in nsg_response.data:
 compute_client = oci.core.ComputeClient(mylearn_config)
 
 compute_response = compute_client.list_instances(compartment_id,lifecycle_state="RUNNING")
-if args.verbose: print(compute_response, file=sys.stderr)
+if args.verbose: print(compute_response.data, file=sys.stderr)
 
 for compute in compute_response.data:
     compute_id   = compute.id
     compute_name = compute.display_name
     print(f'terraform import oci_core_instance.{compute_name} {compute_id}')
+
+# ------------------------------------------------------------------------------
+# Process all DNS Resources
+# ------------------------------------------------------------------------------
+
+dns_client = oci.dns.DnsClient(mylearn_config)
+
+dns_response = dns_client.list_resolvers(compartment_id)
+if args.verbose: print(dns_response.data, file=sys.stderr)
+
+for resolver in dns_response.data:
+    resolver_id   = resolver.id
+    resolver_name = resolver.display_name
+    print(f'terrform import oci_dns_resolver.{resolver_name} {resolver_id}')
+
+    dns_ep_response = dns_client.list_resolver_endpoints(resolver_id)
+    if args.verbose: print(dns_ep_response.data, file=sys.stderr)
+
+    for dns_ep in dns_ep_response.data:
+        id_list      = ['resolverId']
+        id_list.extend(dns_ep._self.split('/')[-3:])
+        dns_ep_id    = '/'.join(id_list)
+        dns_ep_name  = dns_ep.name
+        print(f'terraform import oci_dns_resolver_endpoint.{dns_ep_name} {dns_ep_id}')
