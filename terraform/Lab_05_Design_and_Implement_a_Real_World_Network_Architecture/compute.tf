@@ -45,6 +45,7 @@ resource "tls_private_key" "ocinplab05key" {
 resource "oci_core_instance" "IAD-NP-LAB05-VM-01" {
     availability_domain             = local.ad1
     compartment_id                  = var.compartment_id
+    display_name                    = "IAD-NP-LAB05-VM-01"
     shape                           = "VM.Standard.A1.Flex"
 
     create_vnic_details {

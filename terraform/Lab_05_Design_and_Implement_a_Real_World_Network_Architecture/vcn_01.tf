@@ -23,13 +23,13 @@ resource "oci_core_vcn" "IAD-NP-LAB05-VCN-01" {
 
 resource "oci_core_internet_gateway" "IAD-NP-LAB05-IG-01" {
     compartment_id              = var.compartment_id
-    display_name                = "LPG gateway-IAD-NP-LAB05-VCN-01"
+    display_name                = "IAD-NP-LAB05-IG-01"
     vcn_id                      = oci_core_vcn.IAD-NP-LAB05-VCN-01.id
 }
 
 resource "oci_core_local_peering_gateway" "IAD-NP-LAB05-LPG-01" {
     compartment_id              = var.compartment_id
-    display_name                = "LPG gateway-IAD-NP-LAB05-VCN-01"
+    display_name                = "IAD-NP-LAB05-LPG-01"
     vcn_id                      = oci_core_vcn.IAD-NP-LAB05-VCN-01.id
 }
 
@@ -40,7 +40,7 @@ resource "oci_core_local_peering_gateway" "IAD-NP-LAB05-LPG-01" {
 resource "oci_core_default_dhcp_options" "DHCP-Options-VCN-01" {
     manage_default_resource_id  = oci_core_vcn.IAD-NP-LAB05-VCN-01.default_dhcp_options_id
     compartment_id              = var.compartment_id
-    display_name                = "DHCP Options for IAD-NP-LAB05-VCN-01"
+    display_name                = "DHCP-Options-VCN-01"
     domain_name_type            = "CUSTOM_DOMAIN"
     options {
         custom_dns_servers      = [
@@ -63,7 +63,7 @@ resource "oci_core_default_dhcp_options" "DHCP-Options-VCN-01" {
 resource "oci_core_subnet" "IAD-NP-LAB05-SNET-01" {
     cidr_block                  = "10.0.0.0/24"
     compartment_id              = var.compartment_id
-    display_name                = "public subnet-IAD-NP-LAB05-VCN-01"
+    display_name                = "IAD-NP-LAB05-SNET-01"
     dns_label                   = "public"
     prohibit_internet_ingress   = "false"
     prohibit_public_ip_on_vnic  = "false"
@@ -76,7 +76,7 @@ resource "oci_core_subnet" "IAD-NP-LAB05-SNET-01" {
 
 resource "oci_core_default_route_table" "IAD-NP-LAB05-VCN-01-default-route-table" {
     compartment_id              = var.compartment_id
-    display_name                = "default route table for IAD-NP-LAB05-VCN-01"
+    display_name                = "IAD-NP-LAB05-VCN-01-default-route-table"
     route_rules {
         destination             = "0.0.0.0/0"
         destination_type        = "CIDR_BLOCK"
@@ -96,7 +96,7 @@ resource "oci_core_default_route_table" "IAD-NP-LAB05-VCN-01-default-route-table
 
 resource "oci_core_default_security_list" "Default-Security-List-VCN-01" {
     compartment_id              = var.compartment_id
-    display_name                = "Default Security List for IAD-NP-LAB05-VCN-01"
+    display_name                = "Default-Security-List-VCN-01"
     egress_security_rules {
         destination             = "0.0.0.0/0"
         destination_type        = "CIDR_BLOCK"

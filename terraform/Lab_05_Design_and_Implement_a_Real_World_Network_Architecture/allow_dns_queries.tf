@@ -13,7 +13,7 @@
 resource "oci_core_network_security_group" "DNS_queries_from_VCN01" {
 	compartment_id              = var.compartment_id
 	vcn_id                      = oci_core_vcn.IAD-NP-LAB05-VCN-02.id
-	display_name                = "DNS-queries-from-VCN01"
+	display_name                = "DNS_queries_from_VCN01"
 }
 
 resource "oci_core_network_security_group_security_rule" "DNS_queries_from_VCN01_security_rule" {
@@ -77,6 +77,7 @@ resource "oci_dns_resolver_endpoint" "LAB05_VCN01_FORWARDER" {
 
 resource "oci_dns_resolver" "LAB05_VCN01_DNS_RESOLVER" {
 	resolver_id 				= data.oci_core_vcn_dns_resolver_association.IAD-NP-LAB05-VCN-01-RESOLVER.dns_resolver_id
+	display_name				= "LAB05_VCN01_DNS_RESOLVER"
 	scope 						= "PRIVATE"
 	rules {
 		action 					= "FORWARD"
