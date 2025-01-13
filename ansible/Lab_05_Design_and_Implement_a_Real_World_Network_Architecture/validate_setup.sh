@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
 # ------------------------------------------------------------------------------
-# Validate Lab setup by pinging 
+# Validate Lab setup by testing DNS entries
 # ------------------------------------------------------------------------------
 
-printf "\nPinging from VM01\n\n"
+printf "\nTesting from VM01\n\n"
 
 ssh -F .ssh/config VM01 <<DONE
-printf "\nPinging VM02\n\n"
-ping -c 10 -4 172.16.0.208
+host server01.zone-a.local
+host -t NS zone-a.local
+host -t SOA zone-a.local
+host server01.zone-b.local
 DONE
 
-printf "\nPinging from VM02\n\n"
-
-ssh -F .ssh/config VM02 <<DONE
-printf "\nPinging VM01\n\n"
-ping -c 10 -4 10.0.0.161
-DONE
+exit 0

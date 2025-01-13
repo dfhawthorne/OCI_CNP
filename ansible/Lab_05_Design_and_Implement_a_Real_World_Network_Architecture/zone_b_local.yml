@@ -1,0 +1,123 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 05:
+# Design and Implement a Real-Network Architecture: Configuring private DNS
+# Zones, views, resolvers, listeners and forwarder
+#
+# Virtual Cloud Network 02
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# Private DNS Zone
+# ------------------------------------------------------------------------------
+
+- name:                             "Get ZONE B DNS View Details"
+  oracle.oci.oci_dns_view_facts:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    scope:                          "PRIVATE"
+    display_name:                   "{{ vcn_02.vcn.display_name }}"
+  register:                         vcn02_views
+
+- name:                             "Display Current ZONE B DNS View Details"
+  ansible.builtin.debug:
+    var:                            vcn02_views
+    verbosity:                      1
+
+- name:                             "Extract DNS View ID"
+  ansible.builtin.set_fact:
+    vcn02_view_id:                  "{{ vcn02_views.views[0].id }}"
+  when:
+    - vcn02_views.views | length != 0
+
+- name:                             "Create ZONE B DNS View"
+  oracle.oci.oci_dns_view:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    scope:                          "PRIVATE"
+    display_name:                   "{{ vcn_02.vcn.display_name }}"
+  register:                         vcn02_view
+  when:
+    - vcn02_views.views | length == 0
+
+- name:                             "Extract DNS View ID"
+  ansible.builtin.set_fact:
+    vcn02_view_id:                  vcn02_view.view.id
+  when:
+    - vcn02_view.view.id is defined
+
+- name:                             "Display ZONE B DNS OCID"
+  ansible.builtin.debug:
+    var:                            vcn02_view_id
+    verbosity:                      1
+  when:
+    - vcn02_view_id is defined
+
+- name:                             "Check for Existance of DNS Zone"
+  oracle.oci.oci_dns_zone_facts:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    name:                           "zone-b.local"
+    scope:                          "PRIVATE"
+    view_id:                        "{{ vcn02_view_id }}"
+  register:                         zone_b_exists
+
+- name:                             "Create DNS Zone"
+  oracle.oci.oci_dns_zone:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    name:                           "zone-b.local"
+    scope:                          "PRIVATE"
+    view_id:                        "{{ vcn02_view_id }}"
+    zone_type:                      "PRIMARY"
+    state:                          "present"
+  when:
+    - zone_b_exists.zones | length == 0
+
+- name:                             "Get Details about DNS Zone"
+  oracle.oci.oci_dns_zone_facts:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    name:                           "zone-b.local"
+    scope:                          "PRIVATE"
+    view_id:                        "{{ vcn02_view_id }}"
+  register:                         zone_b
+
+- name:                             "Display ZONE B Details"
+  ansible.builtin.debug:
+    var:                            zone_b.zones
+    verbosity:                      1
+  when:
+    - zone_b.zones is defined
+
+- name:                             "Retrieve all Zone B Records"
+  oracle.oci.oci_dns_zone_records_facts:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    zone_name_or_id:                "{{ zone_b.zones[0].id }}"
+    scope:                          "PRIVATE"
+    view_id:                        "{{ vcn02_view_id }}"
+  register:                         zone_b_records
+
+- name:                             "Display ZONE B Records"
+  ansible.builtin.debug:
+    var:                            zone_b_records
+    verbosity:                      1
+
+- name:                             "Add DNS Entry for ZONE B"
+  oracle.oci.oci_dns_rrset:
+    region:                         "{{ region }}"
+    compartment_id:                 "{{ compartment_id }}"
+    domain:                         "server01.zone-b.local"
+    rtype:                          "A"
+    scope:                          "PRIVATE"
+    state:                          "present"
+    view_id:                        "{{ vcn02_view_id }}"
+    zone_name_or_id:                "{{ zone_b.zones[0].id }}"
+    patch_items:
+      - domain:                     "server01.zone-b.local"
+        operation:                  "ADD"
+        rdata:                      "172.16.0.123"
+        rtype:                      "A"
+        ttl:                        30
+...

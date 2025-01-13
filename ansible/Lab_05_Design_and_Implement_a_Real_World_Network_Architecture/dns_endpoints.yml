@@ -1,0 +1,123 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 05:
+# Design and Implement a Real-Network Architecture: Configuring private DNS
+# Zones, views, resolvers, listeners and forwarder
+#
+# DNS Endpoints
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# Network Security Group for DNS queries originating in VCN 01
+# ------------------------------------------------------------------------------
+
+- name:                         "Create Network Security Group in VCN 02"
+  oracle.oci.oci_network_security_group:
+    region:                     "{{ region }}"
+    compartment_id:             "{{ compartment_id }}"
+    vcn_id:                     "{{ vcn_02.vcn.id }}"
+    display_name:               "DNS_queries_from_VCN01"
+  register:                     nsg_02
+
+- name:                         "Display Network Security Group in VCN 02"
+  ansible.builtin.debug:
+    var:                        nsg_02.network_security_group 
+    verbosity:                  1
+  when:
+    -                           nsg_02.network_security_group is defined
+
+- name:                         "Allow DNS queries from VCN 01 to VCN 02"
+  oracle.oci.oci_network_security_group_security_rule_actions:
+    region:                     "{{ region }}"
+    action:                     "add"
+    network_security_group_id:  "{{ nsg_02.network_security_group.id }}"
+    security_rules:
+      - description:            "Allow DNS queries from VCN 01 to VCN 02"
+        direction:              "INGRESS"
+        is_stateless:           yes
+        protocol:               "17"
+        source:                 "10.0.0.53/32"
+        source_type:            "CIDR_BLOCK"
+        udp_options:
+          destination_port_range:
+            max:                53
+            min:                53
+
+# ------------------------------------------------------------------------------
+# Create DNS Resolver Listener
+# ------------------------------------------------------------------------------
+
+- name:                       "Get DNS Resolver for VCN 02"
+  oracle.oci.oci_network_vcn_dns_resolver_association_facts:
+    region:                   "{{ region }}"
+    vcn_id:                   "{{ vcn_02.vcn.id }}"
+  register:                   resolver_02
+
+- name:                       "Display DNS Resolver for VCN 02 Details"
+  ansible.builtin.debug:
+    var:                      resolver_02
+    verbosity:                1
+  when:
+    -                         resolver_02 is defined
+
+- name:                       "Create DNS Listener Endpoint in VCN 02"
+  oracle.oci.oci_dns_resolver_endpoint:
+    region:                   "{{ region }}"
+    endpoint_type:            "VNIC"
+    is_forwarding:            no
+    is_listening:             yes
+    listening_address:        "172.16.0.53"
+    name:                     "LAB05_VCN02_LISTENER"
+    resolver_id:              "{{ resolver_02.vcn_dns_resolver_association.dns_resolver_id }}"
+    scope:                    "PRIVATE"
+    subnet_id:                "{{ public_subnet_02.subnet.id }}"
+    nsg_ids:
+      -                       "{{ nsg_02.network_security_group.id }}"
+  register:                   dns_listener
+
+# ------------------------------------------------------------------------------
+# Adding a forwarder
+#
+# After adding the listener, it is accessible when specified as a query 
+# parameter. Now you will add a forwarder and the clients on VCN01 will be able
+# to query without having to add the DNS server as a parameter.
+# ------------------------------------------------------------------------------
+
+- name:                       "Get DNS Resolver for VCN 01"
+  oracle.oci.oci_network_vcn_dns_resolver_association_facts:
+    region:                   "{{ region }}"
+    vcn_id:                   "{{ vcn_01.vcn.id }}"
+  register:                   resolver_01
+
+- name:                       "Display DNS Resolver for VCN 01 Details"
+  ansible.builtin.debug:
+    var:                      resolver_01
+    verbosity:                1
+  when:
+    -                         resolver_01 is defined
+
+- name:                       "Create DNS Forwarder Endpoint in VCN 01"
+  oracle.oci.oci_dns_resolver_endpoint:
+    region:                   "{{ region }}"
+    endpoint_type:            "VNIC"
+    is_forwarding:            yes
+    is_listening:             no
+    forwarding_address:       "10.0.0.53"
+    name:                     "LAB05_VCN01_FORWARDER"
+    resolver_id:              "{{ resolver_01.vcn_dns_resolver_association.dns_resolver_id }}"
+    scope:                    "PRIVATE"
+    subnet_id:                "{{ public_subnet_01.subnet.id }}"
+  register:                   dns_forwarder
+
+- name:                       "Create DNS Forwarding Rules"
+  oracle.oci.oci_dns_resolver:
+    region:                   "{{ region }}"
+    resolver_id:              "{{ resolver_01.vcn_dns_resolver_association.dns_resolver_id }}"
+    display_name:              "LAB05_VCN01_DNS_RESOLVER"
+    scope:                     "PRIVATE"
+    rules:
+      - action:               "FORWARD"
+        destination_addresses:
+          -                   "{{ dns_listener.resolver_endpoint.listening_address }}"
+        source_endpoint_name: "{{ dns_forwarder.resolver_endpoint.name }}"
+...

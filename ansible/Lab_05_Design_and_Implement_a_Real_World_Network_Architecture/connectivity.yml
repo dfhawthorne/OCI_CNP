@@ -9,7 +9,7 @@
     compartment_id:           "{{ compartment_id }}"
     vcn_id:                   "{{ vcn_01.vcn.id }}"
     rt_id:                    "{{ vcn_01.vcn.default_route_table_id }}"
-    display_name:             "default route table for IAD-NP-LAB05-VCN-01"
+    display_name:             "IAD-NP-LAB05-VCN-02-default-route-table"
     state:                    "present"
     route_rules:
       - destination:          "0.0.0.0/0"
@@ -25,7 +25,7 @@
     compartment_id:           "{{ compartment_id }}"
     vcn_id:                   "{{ vcn_02.vcn.id }}"
     rt_id:                    "{{ vcn_02.vcn.default_route_table_id }}"
-    display_name:             "default route table for IAD-NP-LAB05-VCN-01"
+    display_name:             "IAD-NP-LAB05-VCN-02-default-route-table"
     state:                    "present"
     route_rules:
       - destination:          "0.0.0.0/0"
@@ -66,48 +66,6 @@
         icmp_options:
           type:               "3"
       - source:               "{{ vcn_02.vcn.cidr_blocks[0] }}"
-        source_type:          "CIDR_BLOCK"
-        is_stateless:         false
-        protocol:             "1"
-        icmp_options:
-          type:               "8"
-    egress_security_rules:
-      - destination:          "0.0.0.0/0"
-        destination_type:     "CIDR_BLOCK"
-        protocol:             "all"
-        is_stateless:         false
-
-- name:                       "Update default security list for VCN 02"
-  oracle.oci.oci_network_security_list:
-    region:                   "{{ region }}"
-    display_name:             "IAD-NP-LAB05-SL-02"
-    compartment_id:           "{{ compartment_id }}"
-    vcn_id:                   "{{ vcn_02.vcn.id }}"
-    id:                       "{{ vcn_02.vcn.default_security_list_id }}"
-    state:                    "present"
-    ingress_security_rules:
-      - source:               "0.0.0.0/0"
-        source_type:          "CIDR_BLOCK"
-        is_stateless:         false
-        protocol:             "6"
-        tcp_options:
-          destination_port_range:
-            min:              "22"
-            max:              "22"
-      - source:               "0.0.0.0/0"
-        source_type:          "CIDR_BLOCK"
-        is_stateless:         false
-        protocol:             "1"
-        icmp_options:
-          code:               "4"
-          type:               "3"
-      - source:               "{{ vcn_02.vcn.cidr_blocks[0] }}"
-        source_type:          "CIDR_BLOCK"
-        is_stateless:         false
-        protocol:             "1"
-        icmp_options:
-          type:               "3"
-      - source:               "{{ vcn_01.vcn.cidr_blocks[0] }}"
         source_type:          "CIDR_BLOCK"
         is_stateless:         false
         protocol:             "1"

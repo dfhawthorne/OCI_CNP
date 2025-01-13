@@ -57,10 +57,8 @@
       memory_in_gbs:                6
     state:                          "present"
   loop:
-    - display_name:                 "IAD-NP-LAB04-VM-01"
+    - display_name:                 "IAD-NP-LAB05-VM-01"
       subnet_id:                    "{{ public_subnet_01.subnet.id }}"
-    - display_name:                 "IAD-NP-LAB04-VM-02"
-      subnet_id:                    "{{ public_subnet_02.subnet.id }}"
   loop_control:
     loop_var:                       vm
   register:                         vms

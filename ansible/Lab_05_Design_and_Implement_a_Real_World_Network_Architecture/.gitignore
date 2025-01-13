@@ -2,3 +2,4 @@ test*
 *.log
 .ssh
 access_vm.sh
+convert_to_zone_b.sed

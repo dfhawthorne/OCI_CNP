@@ -8,6 +8,3 @@ Host *
     UserKnownHostsFile .ssh/known_hosts
 Host VM01
     Hostname {{ vms.results[0].instance.primary_public_ip }}
-Host VM02
-    Hostname {{ vms.results[1].instance.primary_public_ip }}
-

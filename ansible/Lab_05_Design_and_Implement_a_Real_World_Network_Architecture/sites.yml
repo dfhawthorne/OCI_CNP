@@ -18,9 +18,12 @@
         -                         "vcn02.yml"
         -                         "connectivity.yml"
         -                         "compute.yml"
+        -                         "zone_a_local.yml"
+        -                         "zone_b_local.yml"
+        -                         "dns_endpoints.yml"
         -                         "validate_setup.yml"
       loop_control:
         loop_var:                 task_file
       vars:
-        region:                   "us-ashburn-1"
+        region:                   "{{ home_region }}"
 ...
