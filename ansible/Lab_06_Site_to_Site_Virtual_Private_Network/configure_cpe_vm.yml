@@ -1,0 +1,79 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 06:
+# Site-to-Site Virtual Private Network: Connect OCI resources to on-premises via
+# site-to-site VPN, using LibreSwan as the customer premises equipment
+#
+# The IPSec tunnel needs to be configured. Three files are necessary for
+# establishing the OCI to On-Premises connection.
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# The IPSec tunnel needs to be configured. Three files are necessary for
+# establishing the OCI to On-Premises connection.
+# ------------------------------------------------------------------------------
+
+- name:                             "Install Software"
+  ansible.builtin.dnf:
+    name:
+      -                             libreswan
+    state:                          present
+  become:                           yes
+  become_user:                      root
+
+- name:                             "Update the VNIC of the VM"
+  ansible.posix.sysctl:
+    name:                           "net.ipv4.{{ sysctl.name }}"
+    value:                          "{{ sysctl.value }}"
+    state:                          present
+  loop:
+    - name:                         ip_forward
+      value:                        1
+    - name:                         conf.all.accept_redirects
+      value:                        0
+    - name:                         conf.all.send_redirects
+      value:                        0
+    - name:                         conf.default.send_redirects
+      value:                        0
+    - name:                         conf.enp0s6.send_redirects
+      value:                        0
+    - name:                         conf.default.accept_redirects
+      value:                        0
+    - name:                         conf.enp0s6.accept_redirects
+      value:                        0
+  loop_control:
+    loop_var:                       sysctl
+  become:                           yes
+  become_user:                      root
+
+- name:                             "Save the IPSec information"
+  ansible.builtin.template:
+    dest:                           "/etc/ipsec.d/oci-ipsec.conf"
+    src:                            "oci-ipsec.conf.j2"
+  become:                           yes
+  become_user:                      root
+
+- name:                             "Save the shared secrets information"
+  ansible.builtin.template:
+    dest:                           "/etc/ipsec.d/oci-ipsec.secrets"
+    src:                            "oci-ipsec.secrets.j2"
+  become:                           yes
+  become_user:                      root
+
+- name:                             "Restart IPSec Service"
+  ansible.builtin.service:
+    name:                           ipsec
+    state:                          restarted
+  become:                           yes
+  become_user:                      root
+
+- name:                             "Wait for IPSec Service Stability"
+  ansible.builtin.pause:
+    seconds:                        10
+
+- name:                             "Update IPsec tunnel route"
+  ansible.builtin.command:
+    cmd: "ip route add {{ phoenix_cidr | ansible.utils.ipsubnet(12, 0) }} nexthop dev vti1 nexthop dev vti2"
+  become:                           yes
+  become_user:                      root
+...

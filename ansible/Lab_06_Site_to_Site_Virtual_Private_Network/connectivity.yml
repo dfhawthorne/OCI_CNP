@@ -1,0 +1,105 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 06:
+# Site-to-Site Virtual Private Network: Connect OCI resources to on-premises via
+# site-to-site VPN, using LibreSwan as the customer premises equipment
+# 
+# Launch On-Premises Network and CPE VM in Ashburn Region
+#
+# In this practice, you will simulate an on-premises network (OPN) in the Ashburn
+# region with a VCN, and a compute instance that will run LibreSwan for the CPE
+# router. There will be a second VM for pinging purposes.
+# ------------------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------------------
+# Route tables
+# ------------------------------------------------------------------------------
+
+- name:                             "Create IPSec Connection"
+  oracle.oci.oci_network_ip_sec_connection:
+    region:                         "us-phoenix-1"
+    compartment_id:                 "{{ compartment_id }}"
+    key_by:
+      - 'display_name'
+    display_name:                   "PHX-NP-LAB06-VPN-01"
+    cpe_id:                         "{{ phx_np_lab06_cpe_01.cpe.id }}"
+    cpe_local_identifier:           "{{ phx_np_lab06_cpe_01.cpe.ip_address }}"
+    cpe_local_identifier_type:      "IP_ADDRESS"
+    drg_id:                         "{{ phx_np_lab06_drg_01.drg.id }}"
+    state:                          "present"
+    static_routes:                  "{{ ashburn_cidr }}"
+    tunnel_configuration:
+      - display_name:               "PHX-NP-LAB06-Tunnel-01"
+        ike_version:                "V1"
+        routing:                    "STATIC"
+      - display_name:               "PHX-NP-LAB06-Tunnel-02"
+        ike_version:                "V1"
+        routing:                    "STATIC"
+  register:                         phx_np_lab06_vpn_01
+
+- name:                             "Display IPSec Connection"
+  ansible.builtin.debug:
+    var:                            phx_np_lab06_vpn_01.ip_sec_connection
+    verbosity:                      1
+
+- name:                             "Get IPSec Tunnel Information"
+  oracle.oci.oci_network_ip_sec_connection_tunnel_facts:
+    region:                         "us-phoenix-1"
+    ipsc_id:                        "{{ phx_np_lab06_vpn_01.ip_sec_connection.id }}"
+  register:                         phoenix_ipsec_tunnel_info
+
+- name:                             "Display IPSec Tunnel Information"
+  ansible.builtin.debug:
+    var:                            phoenix_ipsec_tunnel_info.ip_sec_connection_tunnels
+
+- name:                             "Extract VPN IP Addresses"
+  ansible.builtin.set_fact:
+    vpn_1_public_ip:                "{{ phoenix_ipsec_tunnel_info.ip_sec_connection_tunnels[0].vpn_ip }}"
+    vpn_2_public_ip:                "{{ phoenix_ipsec_tunnel_info.ip_sec_connection_tunnels[1].vpn_ip }}"
+
+- name:                             "Add Shared Secret for VPN Tunnel 1"
+  oracle.oci.oci_network_ip_sec_connection_tunnel_shared_secret:
+    region:                         "us-phoenix-1"
+    ipsc_id:                        "{{ phx_np_lab06_vpn_01.ip_sec_connection.id }}"
+    shared_secret:                  "{{ vpn_1_secret }}"
+    state:                          "present"
+    tunnel_id:                      "{{ phoenix_ipsec_tunnel_info.ip_sec_connection_tunnels[0].id }}"
+
+- name:                             "Add Shared Secret for VPN Tunnel 2"
+  oracle.oci.oci_network_ip_sec_connection_tunnel_shared_secret:
+    region:                         "us-phoenix-1"
+    ipsc_id:                        "{{ phx_np_lab06_vpn_01.ip_sec_connection.id }}"
+    shared_secret:                  "{{ vpn_2_secret }}"
+    state:                          "present"
+    tunnel_id:                      "{{ phoenix_ipsec_tunnel_info.ip_sec_connection_tunnels[1].id }}"
+
+- name:                             "Route all traffic to Phoenix via the CPE"
+  oracle.oci.oci_network_route_table:
+    region:                         "us-ashburn-1"
+    compartment_id:                 "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:                   "IAD-NP-LAB06-RT-02"
+    route_rules:
+      - destination:                "{{ phoenix_cidr }}"
+        destination_type:           "CIDR_BLOCK"
+        network_entity_id:          "{{ iad_np_lab06_vmcpe_01.instance.primary_private_ip }}"
+    state:                          "present"
+    vcn_id:                         "{{ iad_np_lab06_opn_01.vcn.id }}"
+  register:                         iad_np_lab06_rt_02
+  when:
+    - 0 == 1
+  
+- name:                           "Update Ashburn Private Subnet"
+  oracle.oci.oci_network_subnet:
+    region:                       "us-ashburn-1"
+    compartment_id:               "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:                 "IAD-NP-LAB06-SNET-02"
+    route_table_id:               "{{ iad_np_lab06_rt_02.route_table.id }}"
+  register:                       iad_np_lab06_snet_02
+  when:
+    - 0 == 1
+...

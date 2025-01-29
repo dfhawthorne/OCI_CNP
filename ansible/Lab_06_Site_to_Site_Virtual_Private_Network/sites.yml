@@ -1,0 +1,52 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 06:
+# Site-to-Site Virtual Private Network: Connect OCI resources to on-premises via
+# site-to-site VPN, using LibreSwan as the customer premises equipment
+# ------------------------------------------------------------------------------
+- name:                           "Lab 06: Site-to-Site Virtual Private Network: Connect OCI resources to on-premises via site-to-site VPN, using LibreSwan as the customer premises equipment"
+  hosts:                          localhost
+  tasks:
+    - name:                       "Load Global Settings"
+      ansible.builtin.include_vars:
+        file:                     "settings.yml"
+
+    - name:                       "Set Global Variables"
+      ansible.builtin.set_fact:
+        ashburn_cidr:             "192.168.20.0/24"
+        phoenix_cidr:             "172.31.0.0/16"
+
+    - name:                       "Include Tasks to Create VCNs and connect them"
+      ansible.builtin.include_tasks:
+        file:                     "{{ task_file }}"
+      loop:
+        -                         "ashburn_vcn.yml"
+        -                         "ashburn_compute.yml"
+        -                         "phoenix_cpe.yml"
+        -                         "phoenix_vcn.yml"
+        -                         "connectivity.yml"
+      loop_control:
+        loop_var:                 task_file
+
+    - name:                       "Add Created VMs to Dynamic Inventory"
+      ansible.builtin.add_host:
+        name:                     "{{ host_entry.name }}"
+        groups:                   "{{ host_entry.group }}"
+        ansible_host:             "{{ host_entry.ip_addr }}"
+        ansible_user:             opc
+        ansible_ssh_private_key_file: "{{ ansible_env.HOME }}/.ssh/id_rsa"
+        ansible_ssh_common_args:   '-o StrictHostKeyChecking=accept-new'
+      loop:
+        - name:                   iad_np_lab06_vmcpe_01
+          group:                  cpe
+          ip_addr:                "{{ cpe_public_ip }}"
+      loop_control:
+        loop_var:                 host_entry
+
+- name:                           "Configure CPE VM"
+  hosts:                          cpe
+  tasks:
+    - name:                       "Include Tasks to Create VCNs and connect them"
+      ansible.builtin.include_tasks:
+        file:                     "configure_cpe_vm.yml"
+...

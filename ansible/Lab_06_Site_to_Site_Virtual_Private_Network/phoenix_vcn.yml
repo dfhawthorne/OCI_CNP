@@ -1,0 +1,197 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 06:
+# Site-to-Site Virtual Private Network: Connect OCI resources to on-premises via
+# site-to-site VPN, using LibreSwan as the customer premises equipment
+# ------------------------------------------------------------------------------
+- name:                       Create a VCN
+  oracle.oci.oci_network_vcn:
+    region:                   "us-phoenix-1"
+    compartment_id:           "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:             "PHX-NP-LAB06-VCN-01"
+    cidr_blocks:
+      -                       "{{ phoenix_cidr }}"
+    dns_label:                "phxnplab06vcn01"
+    state:                    "present"
+  register:                   phx_np_lab06_vcn_01
+
+# ------------------------------------------------------------------------------
+# Gateways
+# ------------------------------------------------------------------------------
+
+- name:                       "Create Internet Gateway in Phoenix"
+  oracle.oci.oci_network_internet_gateway:
+    region:                   "us-phoenix-1"
+    compartment_id:           "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:             "PHX-NP-LAB06-IG-01"
+    vcn_id:                   "{{ phx_np_lab06_vcn_01.vcn.id }}"
+    is_enabled:               true
+    state:                    "present"
+  register:                   phx_np_lab06_ig_01
+
+- name:                       "Create DRG in Phoenix"
+  oracle.oci.oci_network_drg:
+    region:                   "us-phoenix-1"
+    compartment_id:           "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:             "PHX-NP-LAB06-DRG-01"
+    state:                    "present"
+  register:                   phx_np_lab06_drg_01
+
+- name:                       "Attach Phoenix VCN to DRG"
+  oracle.oci.oci_network_drg_attachment:
+    region:                   "us-phoenix-1"
+    compartment_id:           "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:             "PHX-NP-LAB06-VCN-01-ATCH"
+    drg_id:                   "{{ phx_np_lab06_drg_01.drg.id }}"
+    network_details:
+      id:                     "{{ phx_np_lab06_vcn_01.vcn.id }}"
+      type:                   "VCN"
+    state:                    "present"
+  register:                   phx_np_lab06_vcn_01_atch
+
+# ------------------------------------------------------------------------------
+# Default DHCP Options
+# ------------------------------------------------------------------------------
+
+- name:                       "Create DHCP Options"
+  oracle.oci.oci_network_dhcp_options:
+    region:                   "us-phoenix-1"
+    compartment_id:           "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:             "PHX-NP-LAB06-DHCP-01"
+    dhcp_id:                  "{{ phx_np_lab06_vcn_01.vcn.default_dhcp_options_id }}"
+    vcn_id:                   "{{ phx_np_lab06_vcn_01.vcn.id }}"
+    options:
+      - type:                 "DomainNameServer"
+        server_type:          "VcnLocalPlusInternet"
+      - type:                 "SearchDomain"
+        search_domain_names:  
+          - "phxnplab06vcn01.oraclevcn.com"
+    state:                    "present"
+  register:                   phx_np_lab06_dhcp_01
+
+# ------------------------------------------------------------------------------
+# Route Tables
+# ------------------------------------------------------------------------------
+
+- name:                       "Update default route table for Phoenix VCN"
+  oracle.oci.oci_network_route_table:
+    region:                   "us-phoenix-1"
+    compartment_id:           "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:             "PHX-NP-LAB06-RT-01"
+    rt_id:                    "{{ phx_np_lab06_vcn_01.vcn.default_route_table_id }}"
+    route_rules:
+      - destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ phx_np_lab06_ig_01.internet_gateway.id }}"
+      - destination:          "{{ ashburn_cidr }}"
+        destination_type:     "CIDR_BLOCK"
+        network_entity_id:    "{{ phx_np_lab06_drg_01.drg.id }}"
+    state:                    "present"
+
+# ------------------------------------------------------------------------------
+# Security lists (aka Firewall Rules)
+# ------------------------------------------------------------------------------
+
+- name:                       "Update default security lists in Phoenix VCN"
+  oracle.oci.oci_network_security_list:
+    region:                   "us-phoenix-1"
+    compartment_id:           "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:             "PHX-NP-LAB06-SL-01"
+    security_list_id:         "{{ phx_np_lab06_vcn_01.vcn.default_security_list_id }}"
+    egress_security_rules:
+      - description:          "Allow all traffic to exit"
+        destination:          "0.0.0.0/0"
+        destination_type:     "CIDR_BLOCK"
+        protocol:             "all"
+        is_stateless:         "false"
+    ingress_security_rules:
+      - description:          "Allow all inbound SSH traffic"
+        protocol:             "6"
+        source:               "0.0.0.0/0"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         "false"
+        tcp_options:
+          destination_port_range:
+            max:                "22"
+            min:                "22"
+      - description:          "Destination Unreachable - Fragmentation Needed and Don't Fragment was Set"
+        icmp_options:
+          code:               "4"
+          type:               "3"
+        protocol:             "1"
+        source:               "0.0.0.0/0"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         "false"
+      - description:          "Destination Unreachable"
+        icmp_options:
+          type:               "3"
+        protocol:             "1"
+        source:               "{{ phoenix_cidr }}"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         "false"
+      - description:          "Allow all inbound traffic from Phoenix VCN"
+        source:               "{{ phoenix_cidr }}"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         "false"
+        protocol:             "all"
+      - description:          "Allow all PINGs from Ashburn VCN"
+        icmp_options:
+          type:               "8"
+        protocol:             "1"
+        source:               "{{ ashburn_cidr }}"
+        source_type:          "CIDR_BLOCK"
+        is_stateless:         "false"
+
+# ------------------------------------------------------------------------------
+# Create Public and Private Subnets in Phoenix
+# ------------------------------------------------------------------------------
+
+- name:                       "Calculate IPv4 subnet for Phoenix"
+  ansible.builtin.set_fact:
+    phoenix_public_cidr:      "{{ phoenix_cidr | ansible.utils.ipsubnet(24, 0) }}"
+    phoenix_private_cidr:     "{{ phoenix_cidr | ansible.utils.ipsubnet(24, 1) }}"
+
+- name:                       "Create Phoenix Public Subnet"
+  oracle.oci.oci_network_subnet:
+    region:                   "us-phoenix-1"
+    cidr_block:               "{{ phoenix_public_cidr }}"
+    compartment_id:           "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:             "PHX-NP-LAB06-SNET-01"
+    prohibit_public_ip_on_vnic: false
+    prohibit_internet_ingress: false
+    vcn_id:                   "{{ phx_np_lab06_vcn_01.vcn.id }}"
+    dns_label:                "public"
+    state:                    "present"
+  register:                   phx_np_lab06_snet_01
+
+- name:                       "Create Phoenix Private Subnet"
+  oracle.oci.oci_network_subnet:
+    region:                   "us-phoenix-1"
+    cidr_block:               "{{ phoenix_private_cidr }}"
+    compartment_id:           "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    display_name:             "PHX-NP-LAB06-SNET-02"
+    prohibit_public_ip_on_vnic: true
+    prohibit_internet_ingress: true
+    vcn_id:                   "{{ phx_np_lab06_vcn_01.vcn.id }}"
+    dns_label:                "private"
+    state:                    "present"
+  register:                   phx_np_lab06_snet_02
+...

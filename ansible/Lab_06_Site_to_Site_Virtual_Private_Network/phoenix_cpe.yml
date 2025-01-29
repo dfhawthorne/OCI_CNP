@@ -1,0 +1,52 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 06:
+# Site-to-Site Virtual Private Network: Connect OCI resources to on-premises via
+# site-to-site VPN, using LibreSwan as the customer premises equipment
+# 
+# Create Site-to-Site VPN Resources in Phoenix Region
+#
+# Next, you will create in the OCI Phoenix region all the resources required to 
+# configure a site-to-site VPN (VPN): customer premises equipment (CPE) dynamic
+# routing gateway (DRG), VPN tunnels, virtual cloud network (VCN); compute virtutual
+# machine (VM) for testing the connectivity.
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# Create CPE Object in Phoenix Region
+#
+# Note: The CPE Shape is chosen from the first one that matches the vendor
+#       without considering the platform/version field.
+# ------------------------------------------------------------------------------
+
+- name:                     "Find CPE Object Shape"
+  oracle.oci.oci_network_cpe_device_shape_facts:
+    region:                 "us-phoenix-1"
+  register:                 phx_np_lab06_cpe_dev_shapes
+
+- name:                     "Find all matching Libreswan CPE shapes"
+  ansible.builtin.set_fact:
+    libreswan_list:         "{{ phx_np_lab06_cpe_dev_shapes.cpe_device_shapes | selectattr('cpe_device_info.vendor', 'eq', 'Libreswan') | list }}"
+
+- name:                     "Display CPE Object Shapes"
+  ansible.builtin.debug:
+    var:                    libreswan_list
+    verbosity:              1
+
+- name:                     "Create Phoenix CPE"
+  oracle.oci.oci_network_cpe:
+    region:                 "us-phoenix-1"
+    compartment_id:         "{{ compartment_id }}"
+    key_by:
+      -                     "display_name"
+    display_name:           "PHX-NP-LAB06-CPE-01"
+    cpe_device_shape_id:    "{{ libreswan_list[0].id }}"
+    ip_address:             "{{ cpe_public_ip }}"
+    state:                  "present"
+  register:                 phx_np_lab06_cpe_01
+
+- name:                     "Display CPE Object"
+  ansible.builtin.debug:
+    var:                    phx_np_lab06_cpe_01
+    verbosity:              1
+...
