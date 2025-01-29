@@ -29,7 +29,7 @@ resource "oci_core_vcn" "IAD-NP-LAB06-OPN-01" {
 resource "oci_core_internet_gateway" "IAD-NP-LAB06-IG-01" {
     provider                    = oci.ashburn
     compartment_id              = var.compartment_id
-    display_name                = "LPG gateway-IAD-NP-LAB06-OPN-01"
+    display_name                = "Internet gateway-IAD-NP-LAB06-OPN-01"
     vcn_id                      = oci_core_vcn.IAD-NP-LAB06-OPN-01.id
 }
 

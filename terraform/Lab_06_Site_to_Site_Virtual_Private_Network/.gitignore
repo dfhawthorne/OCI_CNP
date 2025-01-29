@@ -5,3 +5,4 @@ sysctl.conf
 .ssh
 *.log
 *_orig
+plan.out
