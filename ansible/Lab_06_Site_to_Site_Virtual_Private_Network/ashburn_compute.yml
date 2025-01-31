@@ -22,7 +22,7 @@
     region:                         "us-ashburn-1"
     compartment_id:                 "{{ compartment_id }}"
     operating_system:               "Oracle Linux"
-    operating_system_version:       "8"
+    operating_system_version:       "9"
     shape:                          "{{ shape_name }}"
     sort_by:                        "TIMECREATED"
     sort_order:                     "DESC"
@@ -107,5 +107,5 @@
   ansible.builtin.set_fact:
     cpe_public_ip:                  "{{ iad_np_lab06_vmcpe_01.instance.primary_public_ip }}"
     cpe_private_ip:                 "{{ iad_np_lab06_vmcpe_01.instance.primary_private_ip }}"
-    ping_public_ip:                 "{{ iad_np_lab06_pingvm_01.instance.primary_public_ip }}"
+    ping_private_ip:                "{{ iad_np_lab06_pingvm_01.instance.primary_private_ip }}"
 ...

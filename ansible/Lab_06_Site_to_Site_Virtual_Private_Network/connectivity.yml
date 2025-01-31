@@ -52,6 +52,7 @@
 - name:                             "Display IPSec Tunnel Information"
   ansible.builtin.debug:
     var:                            phoenix_ipsec_tunnel_info.ip_sec_connection_tunnels
+    verbosity:                      1
 
 - name:                             "Extract VPN IP Addresses"
   ansible.builtin.set_fact:
