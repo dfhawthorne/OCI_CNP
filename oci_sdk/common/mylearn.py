@@ -244,7 +244,7 @@ class vcn:
                 break
         if not route_found:
             new_route_table = list(response.data.route_rules)
-            new_route_table.append(new_route_rule(nw_entity_id,*kwargs))
+            new_route_table.append(new_route_rule(nw_entity_id,**kwargs))
             self.nw_client.update_route_table(
                 self.vcn.default_route_table_id,
                 oci.core.models.UpdateRouteTableDetails(
@@ -484,7 +484,11 @@ class vcn:
             )
 
     def add_ingress_rule(self, **kwargs):
-        """Add an Ingress Rule to a security rule"""
+        """Add an Ingress Rule to a security rule
+        
+        Optional parameters:
+          sl_id:
+            OCID for security list. Default value """
 
         sl_id = kwargs.get('sl_id',self.vcn.default_security_list_id)
         response = self.nw_client.get_security_list(sl_id)
@@ -501,7 +505,7 @@ class vcn:
                 source=kwargs.get('source'),
                 icmp_options=oci.core.models.IcmpOptions(
                     code=kwargs.get('code'),
-                    mode=kwargs.get('mode')
+                    type=kwargs.get('type')
                     ),
                 description=kwargs.get('description')
                 )
@@ -582,21 +586,20 @@ class vcn:
                     ),
                 description=kwargs.get('description')
                 )
-        req_rule = oci.core.models.IngressSecurityRule(
-            source_type='CIDR_BLOCK',
-            protocol=protocol_num,
-            is_stateless=False,
-            source='10.0.0.0/16',
-            icmp_options=oci.core.models.IcmpOptions(code="8"),
-            description=kwargs.get('description')
-            )
+        rule_found = False
         for rule in ingress_rules:
             if rule == req_rule:
                 rule_found = True
                 break
-        response = self.nw_client.update_security_list(
-            sl_id,
-        )
+        if not rule_found:
+            ingress_rules.append(req_rule)
+            response = self.nw_client.update_security_list(
+                sl_id,
+                oci.core.models.UpdateSecurityListDetails(
+                    ingress_security_rules=ingress_rules
+                    )
+                )
+
     def print_security_list(self, sl_ocid, indent=0):
         """Print security list"""
 
