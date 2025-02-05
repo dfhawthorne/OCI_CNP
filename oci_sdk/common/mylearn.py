@@ -137,6 +137,7 @@ class vcn:
         self.ig      = None
         self.sg      = None
         self.natg    = None
+        self.lpg     = None
         self.subnets = []
 
     def add_ig(self, **kwargs):
@@ -345,6 +346,65 @@ class vcn:
                 )
             ).data
 
+    def add_lpg(self, **kwargs):
+        """Adds a Local Peering Gateway to the VCN.
+        
+        If a Local Peering Gateway already exists in the VCN, those details
+        are used instead of creating a new one.
+        
+        Optional parameters:
+          compartment_id:
+            The OCID of the OCI compartment where to create the VCN. The
+            default value is obtained from the OCI CLI configuration file,
+            if present.
+          display_name:
+            The display name of the Local Peering Gateway. Default value is
+            'Local peering gateway-<display name for VCN>'."""
+        
+        global compartment_id
+
+        response = self.nw_client.list_local_peering_gateways(
+            kwargs.get(
+                'compartment_id',
+                compartment_id
+                ),
+            vcn_id=self.vcn.id
+        )
+        if len(response.data) > 0:
+            self.lpg = response.data[0]
+        else:
+            self.lpg = self.nw_client.create_local_peering_gateway(
+                oci.core.models.CreateLocalPeeringGatewayDetails(
+                    display_name=kwargs.get(
+                        'display_name',
+                        f'Local peering gateway-{self.vcn.display_name}'
+                        ),
+                    compartment_id=kwargs.get(
+                        'compartment_id',
+                        compartment_id
+                        ),
+                    vcn_id=self.vcn.id
+                )
+            ).data
+
+    def connect_lpgs(self, lpg_id):
+        """Connect Local Peering Gateways.
+        """
+        assert self.lpg is not None, "VCN does not have a LPG"
+
+        response = self.nw_client.get_local_peering_gateway(self.lpg.id)
+        self.lpg = response.data
+        if self.lpg.peer_id is None:
+            response = self.nw_client.connect_local_peering_gateways(
+                self.lpg.id,
+                oci.core.models.ConnectLocalPeeringGatewaysDetails(
+                    peer_id=lpg_id
+                    )
+                )
+            print(response)
+            response = self.nw_client.get_local_peering_gateway(self.lpg.id)
+            self.lpg = response.data
+        
     def add_subnet(self, display_name, public_access=False, **kwargs):
         """Adds a Subnet to the VCN.
         
@@ -423,6 +483,120 @@ class vcn:
                 ).data
             )
 
+    def add_ingress_rule(self, **kwargs):
+        """Add an Ingress Rule to a security rule"""
+
+        sl_id = kwargs.get('sl_id',self.vcn.default_security_list_id)
+        response = self.nw_client.get_security_list(sl_id)
+        ingress_rules = response.data.ingress_security_rules
+        protocol = kwargs.get('protocol','ICMP')
+        if   protocol == "ICMP":
+            req_rule = oci.core.models.IngressSecurityRule(
+                source_type=kwargs.get(
+                    'source_type',
+                    oci.core.models.IngressSecurityRule.SOURCE_TYPE_CIDR_BLOCK
+                    ),
+                protocol="1",
+                is_stateless=kwargs.get('is_stateless',False),
+                source=kwargs.get('source'),
+                icmp_options=oci.core.models.IcmpOptions(
+                    code=kwargs.get('code'),
+                    mode=kwargs.get('mode')
+                    ),
+                description=kwargs.get('description')
+                )
+        elif protocol == "TCP":
+            dest_ports = kwargs.get('dest_ports')
+            src_ports  = kwargs.get('src_ports')
+            if dest_ports:
+                destination_port_range=oci.core.models.PortRange(
+                    min=dest_ports[0],
+                    max=dest_ports[1]
+                    )
+            else:
+                destination_port_range=None
+            if src_ports:
+                source_port_range=oci.core.models.PortRange(
+                    min=src_ports[0],
+                    max=src_ports[1]
+                    )
+            else:
+                destination_port_range=None
+            req_rule = oci.core.models.IngressSecurityRule(
+                source_type=kwargs.get(
+                    'source_type',
+                    oci.core.models.IngressSecurityRule.SOURCE_TYPE_CIDR_BLOCK
+                    ),
+                protocol="6",
+                is_stateless=kwargs.get('is_stateless',False),
+                source=kwargs.get('source'),
+                tcp_options=oci.core.models.TcpOptions(
+                    destination_port_range=destination_port_range,
+                    source_port_range=source_port_range
+                    ),
+                description=kwargs.get('description')
+                )
+        elif protocol == "UDP":
+            dest_ports = kwargs.get('dest_ports')
+            src_ports  = kwargs.get('src_ports')
+            if dest_ports:
+                destination_port_range=oci.core.models.PortRange(
+                    min=dest_ports[0],
+                    max=dest_ports[1]
+                    )
+            else:
+                destination_port_range=None
+            if src_ports:
+                source_port_range=oci.core.models.PortRange(
+                    min=src_ports[0],
+                    max=src_ports[1]
+                    )
+            else:
+                destination_port_range=None
+            req_rule = oci.core.models.IngressSecurityRule(
+                source_type=kwargs.get(
+                    'source_type',
+                    oci.core.models.IngressSecurityRule.SOURCE_TYPE_CIDR_BLOCK
+                    ),
+                protocol="17",
+                is_stateless=kwargs.get('is_stateless',False),
+                source=kwargs.get('source'),
+                udp_options=oci.core.models.UdpOptions(
+                    destination_port_range=destination_port_range,
+                    source_port_range=source_port_range
+                    ),
+                description=kwargs.get('description')
+                )
+        elif protocol == "ICMPv6":
+            req_rule = oci.core.models.IngressSecurityRule(
+                source_type=kwargs.get(
+                    'source_type',
+                    oci.core.models.IngressSecurityRule.SOURCE_TYPE_CIDR_BLOCK
+                    ),
+                protocol="58",
+                is_stateless=kwargs.get('is_stateless',False),
+                source=kwargs.get('source'),
+                icmp_options=oci.core.models.IcmpOptions(
+                    code=kwargs.get('code'),
+                    mode=kwargs.get('mode')
+                    ),
+                description=kwargs.get('description')
+                )
+        req_rule = oci.core.models.IngressSecurityRule(
+            source_type='CIDR_BLOCK',
+            protocol=protocol_num,
+            is_stateless=False,
+            source='10.0.0.0/16',
+            icmp_options=oci.core.models.IcmpOptions(code="8"),
+            description=kwargs.get('description')
+            )
+        for rule in ingress_rules:
+            if rule == req_rule:
+                rule_found = True
+                break
+        response = self.nw_client.update_security_list(
+            sl_id,
+        )
     def print_security_list(self, sl_ocid, indent=0):
         """Print security list"""
 
@@ -586,3 +760,49 @@ class vcn:
         result += "  Security Lists:\n    Default:\n"
         result += self.print_security_list(self.vcn.default_security_list_id,indent=6)
         return result
+
+# ------------------------------------------------------------------------------
+# A sub-class that emulates the OCI Console Wizard to create a VCN
+# ------------------------------------------------------------------------------
+
+class vcn_wizard(vcn):
+
+    def __init__(
+        self,
+        display_name=None,
+        region=None,
+        cidr_blocks=["10.0.0.0/16"]
+        ):
+        super().__init__(
+            display_name,
+            region=region,
+            cidr_blocks=cidr_blocks
+            )
+        self.add_ig()
+        self.add_route_rule(self.ig.id)
+        self.add_sg()
+        self.add_natg()
+        self.add_subnet(
+            "public subnet-" + display_name,
+            public_access=True,
+            dns_label='public'
+            )
+        self.add_subnet(
+            "private subnet-" + display_name,
+            public_access=False,
+            dns_label='private'
+            )
+        if self.subnets[1].route_table_id == self.vcn.default_route_table_id:
+            route_rules=[]
+            route_rules.append(
+                new_route_rule(
+                    self.natg.id,
+                    cidr_block="0.0.0.0/0"
+                    )
+                )
+            route_rules.append(self.new_service_route_rule())
+            self.new_route_table(
+                1,
+                display_name=f"route table for private subnet-{display_name}",
+                route_rules=route_rules
+                )
