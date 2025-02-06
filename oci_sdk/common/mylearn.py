@@ -6,6 +6,7 @@ Wrapper module for executing MyLearn labs.
 import netaddr.ip
 import oci
 import os.path
+import time
 
 # ------------------------------------------------------------------------------
 # Global variables
@@ -316,6 +317,13 @@ class vcn:
                 vcn_id=self.vcn.id
                 )
             )
+
+        while True:
+            response = self.nw_client.get_subnet(self.subnets[subnet_idx].id)
+            if response.data.lifecycle_state == "AVAILABLE":
+                break
+            time.sleep(30)
+
         self.nw_client.update_subnet(
             self.subnets[subnet_idx].id,
             oci.core.models.UpdateSubnetDetails(
