@@ -71,6 +71,117 @@ def new_route_rule(nw_entity_id, **kwargs):
             )
         )
 
+
+# -------------------------------------------------------------------------------
+# Dynamic Routing Gateway
+# -------------------------------------------------------------------------------
+
+class drg:
+    """Creates and manage a dynamic routing gateway (DRG)"""
+
+    def __init__(self, display_name, **kwargs):
+        """Creates a DRG with the required display name.
+        
+        The only required parameter is <display_name>. This name is used to
+        detect if the DRG has been created already. If so, the DRG details are
+        used to populate the instance.
+        
+        The optional parameters are:
+          region:
+            The OCI region name. The default value is obtained from the OCI
+            configuration file.
+          compartment_id:
+            The OCID of the OCI compartment where to create the RPC. The
+            default value is obtained from the OCI CLI configuration file, if
+            present."""
+
+        global compartment_id
+        global oci_config
+
+        if oci_config == None:
+            load_oci_config()
+        config = dict(oci_config)
+        if 'region' in kwargs.keys():
+            config['region'] = kwargs['region']
+            oci.config.validate_config(config)
+        self.nw_client = oci.core.VirtualNetworkClient(config)
+        response = self.nw_client.list_drgs(
+            compartment_id=kwargs.get('compartment_id',compartment_id)
+            )
+        drg_found = False
+        for drg in response.data:
+            if drg.display_name == display_name:
+                drg_found = True
+                break
+        if drg_found:
+            self.drg = rpc
+        else:
+            pass
+
+        self.rpcs = list()
+        self.attachments = list()
+    
+    def attach(self, vcn):
+        """Attachs the VCN to the DRG."""
+
+        pass
+
+    def new_rpc(self, display_name, **kwargs):
+        """Creates a remote peering connection (RPC)"""
+
+        self.rpcs.append(rpc(display_name, **kwargs))
+
+# -------------------------------------------------------------------------------
+# Remote Peering Connection
+# -------------------------------------------------------------------------------
+
+class rpc:
+    """Creates and manage a remote peering connection (RPC)"""
+
+    def __init__(self, display_name, **kwargs):
+        """Creates a RPC with the required display name.
+        
+        The only required parameter is <display_name>. This name is used to
+        detect if the RPC has been created already. If so, the RPC details are
+        used to populate the instance.
+        
+        The optional parameters are:
+          region:
+            The OCI region name. The default value is obtained from the OCI
+            configuration file.
+          compartment_id:
+            The OCID of the OCI compartment where to create the RPC. The
+            default value is obtained from the OCI CLI configuration file, if
+            present."""
+
+        global compartment_id
+        global oci_config
+
+        if oci_config == None:
+            load_oci_config()
+        config = dict(oci_config)
+        if 'region' in kwargs.keys():
+            config['region'] = kwargs['region']
+            oci.config.validate_config(config)
+        self.nw_client = oci.core.VirtualNetworkClient(config)
+        response = self.nw_client.list_remote_peering_connections(
+            compartment_id=kwargs.get('compartment_id',compartment_id)
+            )
+        rpc_found = False
+        for rpc in response.data:
+            if rpc.display_name == display_name:
+                rpc_found = True
+                break
+        if rpc_found:
+            self.rpc = rpc
+        else:
+            pass
+    
+    def connect(self, remote_rpc):
+        """Connects the RPC with the remote one."""
+
+        pass
+
 # -------------------------------------------------------------------------------
 # Virtual Cloud Network (VCN)
 # -------------------------------------------------------------------------------
@@ -81,17 +192,18 @@ class vcn:
     def __init__(self, display_name, **kwargs):
         """Create a VCN with the required display name.
         
-        The only required parameter is <display_name>. This name is used to detect
-        if the VCN has been created already. If so, the VCN details are used to
-        populate the instance.
+        The only required parameter is <display_name>. This name is used to
+        detect if the VCN has been created already. If so, the VCN details are
+        used to populate the instance.
         
         The optional parameters are:
           region:
             The OCI region name. The default value is obtained from the OCI
             configuration file.
           compartment_id:
-            The OCID of the OCI compartment where to create the VCN. The default
-            value is obtained from the OCI CLI configuration file, if present.
+            The OCID of the OCI compartment where to create the VCN. The
+            default value is obtained from the OCI CLI configuration file, if
+            present.
           cidr_blocks:
             A list of CIDR blocks to be used by the VCN. The default CIDR block
             list is [10.0.0.0/16].
