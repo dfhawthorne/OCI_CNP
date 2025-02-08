@@ -115,32 +115,70 @@ class drg:
                 drg_found = True
                 break
         if drg_found:
-            self.drg = rpc
+            self.drg = drg
         else:
-            pass
+            self.drg = self.nw_client.create_drg(
+                oci.core.models.CreateDrgDetails(
+                    compartment_id=kwargs.get(
+                        'compartment_id',
+                        compartment_id
+                        ),
+                    display_name=display_name
+                    )
+                ).data
 
         self.rpcs = list()
         self.attachments = list()
     
-    def attach(self, vcn):
+    def attach(self, vcn, **kwargs):
         """Attachs the VCN to the DRG."""
 
-        pass
+        for attachment in self.attachments:
+            if attachment.network_details.type == oci.core.models.DrgAttachmentNetworkDetails.TYPE_VCN and \
+                attachment.network_details.id == vcn.id:
+                return
 
-    def new_rpc(self, display_name, **kwargs):
-        """Creates a remote peering connection (RPC)"""
+        while True:
+            response = self.nw_client.get_drg(self.drg.id)
+            if response.data.lifecycle_state == "AVAILABLE":
+                break
+            if response.data.lifecycle_state != 'PROVISIONING':
+                raise Exception("DRG lifecycle state is neither PROVISIONING nor AVAILABLE")
+            time.sleep(30)
 
-        self.rpcs.append(rpc(display_name, **kwargs))
+        while True:
+            response = self.nw_client.get_vcn(vcn.id)
+            if response.data.lifecycle_state == "AVAILABLE":
+                break
+            if response.data.lifecycle_state != 'PROVISIONING':
+                raise Exception("VCN lifecycle state is neither PROVISIONING nor AVAILABLE")
+            time.sleep(30)
+        
+        response = self.nw_client.list_drg_attachments(
+            kwargs.get('compartment_id',compartment_id),
+            drg_id=self.drg.id,
+            network_id=vcn.id,
+            attachment_type="VCN",
+            display_name=kwargs.get('display_name')
+            )
+        if len(response.data) == 0:
+            response = self.nw_client.create_drg_attachment(
+                oci.core.models.CreateDrgAttachmentDetails(
+                    display_name=kwargs.get('display_name'),
+                    drg_id=self.drg.id,
+                    network_details=oci.core.models.DrgAttachmentNetworkCreateDetails(
+                        id=vcn.id,
+                        type=oci.core.models.DrgAttachmentNetworkCreateDetails.TYPE_VCN
+                        )
+                    )
+                )
+            self.attachments.append(response.data)
+        else:
+            self.attachments.append(response.data[0])
 
-# -------------------------------------------------------------------------------
-# Remote Peering Connection
-# -------------------------------------------------------------------------------
-
-class rpc:
-    """Creates and manage a remote peering connection (RPC)"""
-
-    def __init__(self, display_name, **kwargs):
-        """Creates a RPC with the required display name.
+    def add_rpc(self, display_name, **kwargs):
+        """Creates a remote peering connection (RPC) with the required
+        display name and .
         
         The only required parameter is <display_name>. This name is used to
         detect if the RPC has been created already. If so, the RPC details are
@@ -156,15 +194,7 @@ class rpc:
             present."""
 
         global compartment_id
-        global oci_config
 
-        if oci_config == None:
-            load_oci_config()
-        config = dict(oci_config)
-        if 'region' in kwargs.keys():
-            config['region'] = kwargs['region']
-            oci.config.validate_config(config)
-        self.nw_client = oci.core.VirtualNetworkClient(config)
         response = self.nw_client.list_remote_peering_connections(
             compartment_id=kwargs.get('compartment_id',compartment_id)
             )
@@ -174,14 +204,60 @@ class rpc:
                 rpc_found = True
                 break
         if rpc_found:
-            self.rpc = rpc
+            self.rpcs.append(rpc)
         else:
-            pass
+            response = self.nw_client.create_remote_peering_connection(
+                oci.core.models.CreateRemotePeeringConnectionDetails(
+                    compartment_id=kwargs.get(
+                        'compartment_id',
+                        compartment_id
+                        ),
+                    display_name=display_name,
+                    drg_id=self.drg.id
+                    )
+                )
+            self.rpcs.append(response.data)
     
-    def connect(self, remote_rpc):
+    def connect(self, display_name, remote_rpc_id, remote_peer_region):
         """Connects the RPC with the remote one."""
 
-        pass
+        rpc_found = False
+        for rpc in self.rpcs:
+            if rpc.display_name == display_name:
+                rpc_found = True
+        
+        if not rpc_found:
+            raise Exception(f"RPC '{display_name}' not found")
+        
+        while True:
+            response = self.nw_client.get_remote_peering_connection(rpc.id)
+            if response.data.lifecycle_state == "AVAILABLE":
+                break
+            if response.data.lifecycle_state != "PROVISIONING":
+                raise Exception(f"RPC {rpc.id} lifecyle state is neither AVAILABLE nor PROVISIONING")
+            time.sleep(30)
+        
+        if response.data.peering_status != 'PEERED':
+            self.nw_client.connect_remote_peering_connections(
+                rpc.id,
+                oci.core.models.ConnectRemotePeeringConnectionsDetails(
+                    peer_id=remote_rpc_id,
+                    peer_region_name=remote_peer_region
+                    )
+                )
+    
+    def get_rpc_id(self, display_name):
+        """Get the Remote Peering Connection (RPC) OCID"""
+
+        rpc_found = False
+        for rpc in self.rpcs:
+            if rpc.display_name == display_name:
+                rpc_found = True
+        
+        if not rpc_found:
+            raise Exception(f"RPC '{display_name}' not found")
+
+        return rpc.id
 
 # -------------------------------------------------------------------------------
 # Virtual Cloud Network (VCN)
@@ -322,6 +398,8 @@ class vcn:
             response = self.nw_client.get_subnet(self.subnets[subnet_idx].id)
             if response.data.lifecycle_state == "AVAILABLE":
                 break
+            if response.data.lifecycle_state != 'PROVISIONING':
+                raise Exception("Subnet lifecycle state is neither PROVISIONING nor AVAILABLE")
             time.sleep(30)
 
         self.nw_client.update_subnet(
