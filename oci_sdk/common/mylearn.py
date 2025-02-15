@@ -39,18 +39,23 @@ def load_oci_config():
     oci_config = oci.config.from_file()
     
 def new_route_rule(nw_entity_id, **kwargs):
-    """Creates a route rule:
+    """Creates a route rule for the network entity.
+
+    The required parameter is:
+        nw_entity_id:
+            The OCID for the network entity.
+
     The other optional parameters are:
         description:
-        A textual description of the route rule. The default value is
-        'Default routing is to the Internet'.
+            A textual description of the route rule. The default value is
+            'Default routing is to the Internet'.
         destination:
-        The route target for the rule. The default value is '0.0.0.0/0'.
+            The route target for the rule. The default value is '0.0.0.0/0'.
         destination_type:
-        The type of the route target for the rule. The default value is
-        'CIDR_BLOCK'.
+            The type of the route target for the rule. The default value is
+            'CIDR_BLOCK'.
         route_type:
-        The type of route rule. The default route type is 'STATIC'."""
+            The type of route rule. The default route type is 'STATIC'."""
 
     return oci.core.models.RouteRule(
         description=kwargs.get(
@@ -131,7 +136,22 @@ class drg:
         self.attachments = list()
     
     def attach(self, vcn, **kwargs):
-        """Attachs the VCN to the DRG."""
+        """Attachs the VCN to the DRG. If the VCN is already attached to the DRG,
+        the procedure returns. Otherwise, the procedure waits until both the DRG
+        and DRG have been provisioned. The procedure waits 30 seconds before
+        checking the life-cycle state.
+        
+        The only required parameter is:
+          vcn:
+            The response details from the creation of the VCN.
+        
+        Optional parameters are:
+          compartment_id:
+            The OCID of the compartment where to create the DRG. The default
+            value is obtained from the value gathered at the instantiation of
+            the DRG object.
+          display_name:
+            The name to be displayed for the DRG. There is NO default value."""
 
         for attachment in self.attachments:
             if attachment.network_details.type == oci.core.models.DrgAttachmentNetworkDetails.TYPE_VCN and \
@@ -178,16 +198,13 @@ class drg:
 
     def add_rpc(self, display_name, **kwargs):
         """Creates a remote peering connection (RPC) with the required
-        display name and .
+        display name.
         
         The only required parameter is <display_name>. This name is used to
         detect if the RPC has been created already. If so, the RPC details are
         used to populate the instance.
         
-        The optional parameters are:
-          region:
-            The OCI region name. The default value is obtained from the OCI
-            configuration file.
+        The optional parameter is:
           compartment_id:
             The OCID of the OCI compartment where to create the RPC. The
             default value is obtained from the OCI CLI configuration file, if
@@ -274,9 +291,8 @@ class vcn:
         used to populate the instance.
         
         The optional parameters are:
-          region:
-            The OCI region name. The default value is obtained from the OCI
-            configuration file.
+          assign_ipv6_address:
+            Whether to use IPv6 addresses in VCN. The default value is False.
           compartment_id:
             The OCID of the OCI compartment where to create the VCN. The
             default value is obtained from the OCI CLI configuration file, if
@@ -287,7 +303,10 @@ class vcn:
           dns_label:
             DNS label for VCN. The default value is derived from the display
             name by converting to lowercase and removing dashes and
-            underscores."""
+            underscores.
+          region:
+            The OCI region name. The default value is obtained from the OCI
+            configuration file."""
 
         global compartment_id
         global oci_config
@@ -318,9 +337,10 @@ class vcn:
                 compartment_id=kwargs.get('compartment_id',compartment_id),
                 dns_label=kwargs.get(
                     'dns_label',
-                    display_name.lower().replace('-','').replace('_','')[:16]
+                    display_name.lower().replace('-','').replace('_','')[:15]
                     ),
-                cidr_blocks=cidr_blocks
+                cidr_blocks=cidr_blocks,
+                is_ipv6_enabled=kwargs.get('assign_ipv6_address',False)
             )
             self.vcn     = self.nw_client.create_vcn(vcn_details).data
         self.ig      = None
@@ -623,6 +643,8 @@ class vcn:
           compartment_id:
             The OCID of the OCI compartment where to create the VCN. The default
             value is obtained from the OCI CLI configuration file, if present.
+          ipv6_address:
+            The IPv6 subnet address for this subnet.
           public_access:
             Whether or not the subnet has publicly visible IP addresses. The
             default value is False (only private IP addresses are available in
@@ -662,6 +684,23 @@ class vcn:
                             ).next()
                         )
             prohibit_public_ip_on_vnic = not public_access
+            if 'ipv6_address' in kwargs.keys():
+                ipv6_subnet_num = int(kwargs['ipv6_address'],base=16) + 1
+                ipv6_subnet_cidr = str(
+                    list(
+                        netaddr.ip.IPNetwork(
+                            self.vcn.ipv6_private_cidr_blocks[0],
+                            version=6
+                            ).subnet(
+                                64,
+                                count=ipv6_subnet_num
+                            )
+                        )[-1]
+                    )
+                ipv6_cidr_blocks = [ipv6_subnet_cidr]
+            else:
+                ipv6_cidr_blocks = None
+
             self.subnets.append(
                 self.nw_client.create_subnet(
                     oci.core.models.CreateSubnetDetails(
@@ -674,8 +713,9 @@ class vcn:
                         prohibit_public_ip_on_vnic=prohibit_public_ip_on_vnic,
                         dns_label=kwargs.get(
                             'dns_label',
-                            display_name.lower().replace('-','').replace('_','').replace(' ','')
+                            display_name.lower().replace('-','').replace('_','').replace(' ','')[:15]
                         ),
+                        ipv6_cidr_blocks=ipv6_cidr_blocks,
                         vcn_id=self.vcn.id
                     )
                 ).data
@@ -1007,3 +1047,105 @@ class vcn_wizard(vcn):
                 display_name=f"route table for private subnet-{display_name}",
                 route_rules=route_rules
                 )
+
+# ------------------------------------------------------------------------------
+# Class for launching COMPUTE instances
+# ------------------------------------------------------------------------------
+
+class compute:
+    """Launches and manages COMPUTE instances."""
+
+    def __init__(self, display_name, **kwargs):
+        """Creates a COMPUTE instance with the required display name.
+        
+        The only required parameter is <display_name>. This name is used to
+        detect if the COMPUTE instance has been created already. If so, the
+        COMPUTE instance details are used to populate the instance.
+        
+        The optional parameters are:
+          assign_ipv6_addr:
+            Whether to assign an IPv6 address to the primary VNIC. Default value is
+            False.
+          avail_domain:
+            Availability domain into which launch the COMPUTE instance.
+          compartment_id:
+            The OCID of the OCI compartment where to create the RPC. The
+            default value is obtained from the OCI CLI configuration file, if
+            present.
+          memory_in_gb:
+            The amount of memory (in GB) to allocate to the COMPUTE instance on
+            launch. Default value is six (6).
+          ocpus:
+            The number of Oracle CPUs to allocate to the COMPUTE instance on
+            launch. Default value is one (1).
+          os:
+            The type of operating system to use. There is no default value.
+
+            Along with <os_ver>, <os> is used to select the COMPUTE image to
+            launch that is compatible with <shape>.
+          os_ver:
+            Version of operating system to use. There is no default value.
+          region:
+            The OCI region name. The default value is obtained from the OCI
+            configuration file.
+          shape:
+          ssh_keys:
+          subnet_id:
+          """
+
+        global compartment_id
+        global oci_config
+
+        if oci_config == None:
+            load_oci_config()
+        config = dict(oci_config)
+        if 'region' in kwargs.keys():
+            config['region'] = kwargs['region']
+            oci.config.validate_config(config)
+        self.compute_client = oci.core.ComputeClient(config)
+        response = self.compute_client.list_instances(
+            kwargs.get('compartment_id',compartment_id),
+            display_name=display_name
+            )
+        if len(response.data) > 0:
+            self.instance = response.data[0]
+        else:
+            response = self.compute_client.list_images(
+                kwargs.get('compartment_id',compartment_id),
+                operating_system=kwargs.get('os'),
+                operating_system_verson=kwargs.get('os_ver'),
+                shape=kwargs.get('shape'),
+                sort_by="TIMECREATED",
+                sort_order="DESC",
+                lifecycle_state="AVAILABLE"
+            )
+            if len(response.data) == 0:
+                raise Exception(f"No compute images found.")
+            compute_image = response.data[0]
+            shape_config = oci.core.models.LaunchInstanceShapeConfigDetails(
+                memory_in_gbs=kwargs.get('memory_in_gb',6),
+                ocpus=kwargs.get('ocpus',1)
+            )
+            if 'ssh_keys' in kwargs.keys():
+                with open(os.path.expanduser(kwargs['ssh_keys']),"r") as f:
+                    public_ssh_key_content = f.read()
+                metadata = {
+                        'ssh_authorized_keys': public_ssh_key_content
+                    }
+            else:
+                metadata = None
+
+            response = self.compute_client.launch_instance(
+                oci.core.models.launch_instance_details(
+                    availability_domain=kwargs.get('avail_domain'),
+                    compartment_id=kwargs.get('compartment_id',compartment_id),
+                    display_name=display_name,
+                    image_id=compute_image.id,
+                    shape=kwargs.get('shape'),
+                    shape_config=shape_config,
+                    subnet_id=kwargs.get('subnet_id'),
+                    metadata=metadata
+                )
+            )
+            self.instance = response.data
+    
