@@ -52,36 +52,36 @@ iad_np_lab04_vcn_02.add_route_rule(
 
 # Create your first compute instance
 
+ashburn_ad = mylearn.availability_domain()
+
 public_ips = list()
 iad_np_lab04_vm_01 = mylearn.compute(
     "IAD-NP-LAB04-VM-01",
-    avail_domain="AD1",
+    avail_domain=ashburn_ad.availability_domains[0].name,
     os="Oracle Linux",
     os_ver="8",
     shape="VM.Standard.A1.Flex",
     ocpus="1",
     memory_in_gb="6",
-    subnet_id=iad_np_lab04_vcn_01.subnets[0].id,
-    assign_ipv6_addr=True,
+    subnet=iad_np_lab04_vcn_01.subnets[0],
     ssh_keys="~/.ssh/id_rsa.pub"
 )
-public_ips.append(iad_np_lab04_vm_01.instance.public_ip)
+public_ips.append(iad_np_lab04_vm_01.vnics[0].public_ip)
 
 # Create your second compute instance
 
 iad_np_lab04_vm_02 = mylearn.compute(
     "IAD-NP-LAB04-VM-02",
-    avail_domain="AD1",
+    avail_domain=ashburn_ad.availability_domains[0].name,
     os="Oracle Linux",
     os_ver="8",
     shape="VM.Standard.A1.Flex",
     ocpus="1",
     memory_in_gb="6",
-    subnet_id=iad_np_lab04_vcn_02.subnets[0].id,
-    assign_ipv6_addr=True,
+    subnet=iad_np_lab04_vcn_02.subnets[0],
     ssh_keys="~/.ssh/id_rsa.pub"
 )
-public_ips.append(iad_np_lab04_vm_02.instance.public_ip)
+public_ips.append(iad_np_lab04_vm_02.vnics[0].public_ip)
 
 # Enable IPv6 on the IAD-NP-LAB04-VM-01 compute instance, and on the route tables
 # of both VMs

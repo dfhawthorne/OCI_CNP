@@ -77,6 +77,39 @@ def new_route_rule(nw_entity_id, **kwargs):
             )
         )
 
+# -------------------------------------------------------------------------------
+# Availability Domains
+# -------------------------------------------------------------------------------
+
+class availability_domain:
+    """Availabity domain"""
+
+    def __init__(self, **kwargs):
+        """Retrieves availability domains.
+        
+        The optional parameters are:
+          region:
+            The OCI region name. The default value is obtained from the OCI
+            configuration file.
+          compartment_id:
+            The OCID of the OCI compartment where to create the RPC. The
+            default value is obtained from the OCI CLI configuration file, if
+            present."""
+
+        global compartment_id
+        global oci_config
+
+        if oci_config == None:
+            load_oci_config()
+        config = dict(oci_config)
+        if 'region' in kwargs.keys():
+            config['region'] = kwargs['region']
+            oci.config.validate_config(config)
+        self.identity_client = oci.identity.IdentityClient(config)
+        response = self.identity_client.list_availability_domains(
+            config['tenancy']
+            )
+        self.availability_domains = response.data
 
 # -------------------------------------------------------------------------------
 # Dynamic Routing Gateway
@@ -686,10 +719,12 @@ class vcn:
             prohibit_public_ip_on_vnic = not public_access
             if 'ipv6_address' in kwargs.keys():
                 ipv6_subnet_num = int(kwargs['ipv6_address'],base=16) + 1
+                assert self.vcn.ipv6_cidr_blocks is not None, \
+                    "IPv6 Address missing"
                 ipv6_subnet_cidr = str(
                     list(
                         netaddr.ip.IPNetwork(
-                            self.vcn.ipv6_private_cidr_blocks[0],
+                            self.vcn.ipv6_cidr_blocks[0],
                             version=6
                             ).subnet(
                                 64,
@@ -1089,8 +1124,11 @@ class compute:
             The OCI region name. The default value is obtained from the OCI
             configuration file.
           shape:
+            Shape of the COMPUTE instance to be launched.
           ssh_keys:
-          subnet_id:
+            File location of SSH public key to be stored on the COMPUTE instance.
+          subnet:
+            Subnet details for attaching the primary VNIC to.
           """
 
         global compartment_id
@@ -1103,9 +1141,11 @@ class compute:
             config['region'] = kwargs['region']
             oci.config.validate_config(config)
         self.compute_client = oci.core.ComputeClient(config)
+        self.network_client = oci.core.VirtualNetworkClient(config)
         response = self.compute_client.list_instances(
             kwargs.get('compartment_id',compartment_id),
-            display_name=display_name
+            display_name=display_name,
+            lifecycle_state="RUNNING"
             )
         if len(response.data) > 0:
             self.instance = response.data[0]
@@ -1113,7 +1153,7 @@ class compute:
             response = self.compute_client.list_images(
                 kwargs.get('compartment_id',compartment_id),
                 operating_system=kwargs.get('os'),
-                operating_system_verson=kwargs.get('os_ver'),
+                operating_system_version=kwargs.get('os_ver'),
                 shape=kwargs.get('shape'),
                 sort_by="TIMECREATED",
                 sort_order="DESC",
@@ -1123,8 +1163,8 @@ class compute:
                 raise Exception(f"No compute images found.")
             compute_image = response.data[0]
             shape_config = oci.core.models.LaunchInstanceShapeConfigDetails(
-                memory_in_gbs=kwargs.get('memory_in_gb',6),
-                ocpus=kwargs.get('ocpus',1)
+                memory_in_gbs=float(kwargs.get('memory_in_gb',6)),
+                ocpus=float(kwargs.get('ocpus','1'))
             )
             if 'ssh_keys' in kwargs.keys():
                 with open(os.path.expanduser(kwargs['ssh_keys']),"r") as f:
@@ -1134,18 +1174,45 @@ class compute:
                     }
             else:
                 metadata = None
-
+            if 'subnet' in kwargs.keys():
+                subnet = kwargs['subnet']
+                create_vnic_details = oci.core.models.CreateVnicDetails(
+                    assign_ipv6_ip=(len(subnet.ipv6_cidr_blocks) > 0),
+                    assign_public_ip=(not subnet.prohibit_public_ip_on_vnic),
+                    subnet_id=subnet.id
+                    )
+            else:
+                create_vnic_details = None
             response = self.compute_client.launch_instance(
-                oci.core.models.launch_instance_details(
+                oci.core.models.LaunchInstanceDetails(
                     availability_domain=kwargs.get('avail_domain'),
                     compartment_id=kwargs.get('compartment_id',compartment_id),
+                    create_vnic_details=create_vnic_details,
                     display_name=display_name,
                     image_id=compute_image.id,
                     shape=kwargs.get('shape'),
                     shape_config=shape_config,
-                    subnet_id=kwargs.get('subnet_id'),
                     metadata=metadata
                 )
             )
             self.instance = response.data
+
+            while True:
+                response = self.compute_client.get_instance(self.instance.id)
+                if response.data.lifecycle_state == "RUNNING":
+                    break
+                if response.data.lifecycle_state not in ['PROVISIONING','TERMINATING', 'TERMINATED']:
+                    raise Exception("COMPUTE instance lifecycle state is neither PROVISIONING, TERMINATING, TERMINATED, nor AVAILABLE")
+                time.sleep(30)
+
+        response = self.compute_client.list_vnic_attachments(
+            kwargs.get('compartment_id',compartment_id),
+            instance_id=self.instance.id
+            )
+        self.vnics = list()
+        for vnic in response.data:
+            if vnic.lifecycle_state != 'ATTACHED': continue
+            self.vnics.append(
+                self.network_client.get_vnic(vnic.vnic_id).data
+            )
     
