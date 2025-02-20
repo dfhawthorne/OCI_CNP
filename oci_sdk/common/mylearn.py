@@ -16,6 +16,8 @@ import time
 compartment_id = None
 # OCI configuration dictionary as loaded from OCI configuration file
 oci_config = None
+# Sleep interval between checking lifecycle state
+sleep_time = 10
 
 # -------------------------------------------------------------------------------
 # Helper functions for MyLearn module
@@ -186,6 +188,8 @@ class drg:
           display_name:
             The name to be displayed for the DRG. There is NO default value."""
 
+        global sleep_time
+
         for attachment in self.attachments:
             if attachment.network_details.type == oci.core.models.DrgAttachmentNetworkDetails.TYPE_VCN and \
                 attachment.network_details.id == vcn.id:
@@ -197,7 +201,7 @@ class drg:
                 break
             if response.data.lifecycle_state != 'PROVISIONING':
                 raise Exception("DRG lifecycle state is neither PROVISIONING nor AVAILABLE")
-            time.sleep(30)
+            time.sleep(sleep_time)
 
         while True:
             response = self.nw_client.get_vcn(vcn.id)
@@ -205,7 +209,7 @@ class drg:
                 break
             if response.data.lifecycle_state != 'PROVISIONING':
                 raise Exception("VCN lifecycle state is neither PROVISIONING nor AVAILABLE")
-            time.sleep(30)
+            time.sleep(sleep_time)
         
         response = self.nw_client.list_drg_attachments(
             kwargs.get('compartment_id',compartment_id),
@@ -271,6 +275,8 @@ class drg:
     def connect(self, display_name, remote_rpc_id, remote_peer_region):
         """Connects the RPC with the remote one."""
 
+        global sleep_time
+
         rpc_found = False
         for rpc in self.rpcs:
             if rpc.display_name == display_name:
@@ -285,7 +291,7 @@ class drg:
                 break
             if response.data.lifecycle_state != "PROVISIONING":
                 raise Exception(f"RPC {rpc.id} lifecyle state is neither AVAILABLE nor PROVISIONING")
-            time.sleep(30)
+            time.sleep(sleep_time)
         
         if response.data.peering_status != 'PEERED':
             self.nw_client.connect_remote_peering_connections(
@@ -297,7 +303,12 @@ class drg:
                 )
     
     def get_rpc_id(self, display_name):
-        """Get the Remote Peering Connection (RPC) OCID"""
+        """Get the Remote Peering Connection (RPC) OCID that has the display
+        name of <display_name>.
+        
+        There is only one (1) required parameter:
+          display_name:
+            Display name of the RPC."""
 
         rpc_found = False
         for rpc in self.rpcs:
@@ -308,6 +319,49 @@ class drg:
             raise Exception(f"RPC '{display_name}' not found")
 
         return rpc.id
+
+    def get_all_route_rules(self,**kwargs):
+        """TODO"""
+
+        global sleep_time
+
+        while True:
+            response = self.nw_client.get_drg(self.drg.id)
+            if response.data.lifecycle_state == "AVAILABLE":
+                break
+            if response.data.lifecycle_state != 'PROVISIONING':
+                raise Exception("DRG lifecycle state is neither PROVISIONING nor AVAILABLE")
+            time.sleep(sleep_time)
+        
+        response = self.nw_client.create_drg_route_distribution(
+            oci.core.models.CreateDrgRouteDistributionDetails(
+                display_name=kwargs.get('display_name'),
+                distribution_type=kwargs.get(
+                    'distribution_type',
+                    oci.core.models.CreateDrgRouteDistributionDetails.DISTRIBUTION_TYPE_IMPORT),
+                drg_id=self.drg.id
+                )
+            )
+        drg_route_distribution_id = response.data.id
+        statements = list()
+        statements.append(
+            oci.core.models.AddDrgRouteDistributionStatementDetails(
+                action=oci.core.models.AddDrgRouteDistributionStatementDetails.ACTION_ACCEPT,
+                match_criteria=[
+                    oci.core.models.DrgRouteDistributionMatchCriteria(
+                        match_type=oci.core.models.DrgRouteDistributionMatchCriteria.MATCH_TYPE_MATCH_ALL
+                        )
+                    ],
+                priority=1
+                )
+            )
+        add_drg_route_distribution_statements_details = oci.core.models.AddDrgRouteDistributionStatementsDetails(
+            statements=statements
+            )
+        response = self.nw_client.add_drg_route_distribution_statements(
+            drg_route_distribution_id,
+            add_drg_route_distribution_statements_details
+            )
 
 # -------------------------------------------------------------------------------
 # Virtual Cloud Network (VCN)
@@ -437,6 +491,7 @@ class vcn:
         """Creates a new route table for subnet"""
 
         global compartment_id
+        global sleep_time
 
         rt_response = self.nw_client.create_route_table(
             oci.core.models.CreateRouteTableDetails(
@@ -453,7 +508,7 @@ class vcn:
                 break
             if response.data.lifecycle_state != 'PROVISIONING':
                 raise Exception("Subnet lifecycle state is neither PROVISIONING nor AVAILABLE")
-            time.sleep(30)
+            time.sleep(sleep_time)
 
         self.nw_client.update_subnet(
             self.subnets[subnet_idx].id,
@@ -489,13 +544,14 @@ class vcn:
             rt_id = self.vcn.default_route_table_id
         response = self.nw_client.get_route_table(rt_id)
         route_found = False
+        new_rule = new_route_rule(nw_entity_id, **kwargs)
         for rule in response.data.route_rules:
-            if rule.network_entity_id == nw_entity_id:
+            if rule == new_rule:
                 route_found = True
                 break
         if not route_found:
             new_route_table = list(response.data.route_rules)
-            new_route_table.append(new_route_rule(nw_entity_id,**kwargs))
+            new_route_table.append(new_rule)
             self.nw_client.update_route_table(
                 self.vcn.default_route_table_id,
                 oci.core.models.UpdateRouteTableDetails(
@@ -760,14 +816,47 @@ class vcn:
         """Add an Ingress Rule to a security rule
         
         Optional parameters:
+          code:
+            The numeric code for ICMP or ICMPv6 rule.
+          description:
+            A textual description of the rule. There is NO default value.
+          dest_ports:
+            A tuple of ports (min,max).
+          dest_type:
+            The type of destination for the rule. The default value is 'CIDR_BLOCK'.
+          is_stateless:
+            A Boolean value indicating whether the rule is stateless or not.
+            The default value is False.
+          protocol:
+            Textual representation of protocol to be used. Valid values are:
+              - 'ICMP' (default value)
+              - 'TCP'
+              - 'UDP'
+              - 'ICMPv6'
           sl_id:
-            OCID for security list. Default value """
+            OCID for security list. Default value is default-security-list-id
+            for the VCN.
+          source_type:
+            The type of source for the rule. The default value is 'CIDR_BLOCK'.
+          src_ports:
+            A tuple of ports (min,max).
+          type:
+            The numeric type for ICMP or ICMPv6 rule."""
 
         sl_id = kwargs.get('sl_id',self.vcn.default_security_list_id)
         response = self.nw_client.get_security_list(sl_id)
         ingress_rules = response.data.ingress_security_rules
         protocol = kwargs.get('protocol','ICMP')
         if   protocol == "ICMP":
+            if kwargs.get('code'):
+                icmp_options = oci.core.models.IcmpOptions(
+                    code=kwargs.get('code'),
+                    type=kwargs.get('type')
+                    )
+            else:
+                icmp_options = oci.core.models.IcmpOptions(
+                    type=kwargs.get('type')
+                    )
             req_rule = oci.core.models.IngressSecurityRule(
                 source_type=kwargs.get(
                     'source_type',
@@ -776,10 +865,7 @@ class vcn:
                 protocol="1",
                 is_stateless=kwargs.get('is_stateless',False),
                 source=kwargs.get('source'),
-                icmp_options=oci.core.models.IcmpOptions(
-                    code=kwargs.get('code'),
-                    type=kwargs.get('type')
-                    ),
+                icmp_options=icmp_options,
                 description=kwargs.get('description')
                 )
         elif protocol == "TCP":
@@ -798,7 +884,7 @@ class vcn:
                     max=src_ports[1]
                     )
             else:
-                destination_port_range=None
+                source_port_range=None
             req_rule = oci.core.models.IngressSecurityRule(
                 source_type=kwargs.get(
                     'source_type',
@@ -845,6 +931,13 @@ class vcn:
                 description=kwargs.get('description')
                 )
         elif protocol == "ICMPv6":
+            if kwargs.get('type'):
+                icmp_options = oci.core.models.IcmpOptions(
+                    code=kwargs.get('code'),
+                    type=kwargs.get('type')
+                    )
+            else:
+                icmp_options = None
             req_rule = oci.core.models.IngressSecurityRule(
                 source_type=kwargs.get(
                     'source_type',
@@ -853,10 +946,7 @@ class vcn:
                 protocol="58",
                 is_stateless=kwargs.get('is_stateless',False),
                 source=kwargs.get('source'),
-                icmp_options=oci.core.models.IcmpOptions(
-                    code=kwargs.get('code'),
-                    mode=kwargs.get('mode')
-                    ),
+                icmp_options=icmp_options,
                 description=kwargs.get('description')
                 )
         rule_found = False
@@ -956,10 +1046,12 @@ class vcn:
                     rule.udp_options.destination_port_range
                 )
             elif rule.protocol == "58":
-                result += f"ICMPv6 (type={rule.icmp_options.type}"
-                if rule.icmp_options.code is not None:
-                    result += f", code={rule.icmp_options.code}"
-                result += ") "
+                result += "ICMPv6 "
+                if rule.icmp_options is not None:
+                    result += f"(type={rule.icmp_options.type}"
+                    if rule.icmp_options.code is not None:
+                        result += f", code={rule.icmp_options.code}"
+                    result += ") "
             else:
                 result += str(rule.protocol) + ' '
             result += '\n'
@@ -996,11 +1088,11 @@ class vcn:
         for rule in response.route_rules:
             result += offset + '  '
             result += rule.destination.ljust(18) + ' '
-            if rule.network_entity_id == self.ig.id:
+            if self.ig is not None and rule.network_entity_id == self.ig.id:
                 result += f"Internet Gateway ('{self.ig.display_name}') "
-            elif rule.network_entity_id == self.natg.id:
+            elif self.natg is not None and rule.network_entity_id == self.natg.id:
                 result += f"NAT Gateway ('{self.natg.display_name}') "
-            elif rule.network_entity_id == self.sg.id:
+            elif self.sg is not None and rule.network_entity_id == self.sg.id:
                 result += f"Service Gateway ('{self.sg.display_name}') "
             result += rule.route_type + ' '
             if rule.description:
@@ -1133,6 +1225,7 @@ class compute:
 
         global compartment_id
         global oci_config
+        global sleep_time
 
         if oci_config == None:
             load_oci_config()
@@ -1203,7 +1296,7 @@ class compute:
                     break
                 if response.data.lifecycle_state not in ['PROVISIONING','TERMINATING', 'TERMINATED']:
                     raise Exception("COMPUTE instance lifecycle state is neither PROVISIONING, TERMINATING, TERMINATED, nor AVAILABLE")
-                time.sleep(30)
+                time.sleep(sleep_time)
 
         response = self.compute_client.list_vnic_attachments(
             kwargs.get('compartment_id',compartment_id),
