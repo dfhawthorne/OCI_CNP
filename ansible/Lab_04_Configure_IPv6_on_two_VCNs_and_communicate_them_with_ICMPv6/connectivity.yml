@@ -7,6 +7,8 @@
   oracle.oci.oci_network_drg:
     region:                   "{{ region }}"
     compartment_id:           "{{ compartment_id }}"
+    key_by:
+      - "display_name"
     display_name:             "IAD-NP-LAB04-DRG-01"
     state:                    "present"
   register:                   drg_01
@@ -17,6 +19,8 @@
     compartment_id:           "{{ compartment_id }}"
     vcn_id:                   "{{ vcn_01.vcn.id }}"
     rt_id:                    "{{ vcn_01.vcn.default_route_table_id }}"
+    key_by:
+      - "display_name"
     display_name:             "default route table for IAD-NP-LAB04-VCN-01"
     state:                    "present"
     route_rules:
@@ -36,6 +40,8 @@
     compartment_id:           "{{ compartment_id }}"
     vcn_id:                   "{{ vcn_02.vcn.id }}"
     rt_id:                    "{{ vcn_02.vcn.default_route_table_id }}"
+    key_by:
+      - "display_name"
     display_name:             "default route table for IAD-NP-LAB04-VCN-01"
     state:                    "present"
     route_rules:
@@ -53,7 +59,9 @@
   oracle.oci.oci_network_drg_attachment:
     region:                   "{{ region }}"
     compartment_id:           "{{ compartment_id }}"
-    display_name:             "IAD-NP-LAB04-ATTCH-01"
+    key_by:
+      - "display_name"
+    display_name:             "IAD-NP-LAB04-VCN-01-ATCH"
     drg_id:                   "{{ drg_01.drg.id }}"
     network_details:
       id:                     "{{ vcn_01.vcn.id }}"
@@ -64,7 +72,9 @@
   oracle.oci.oci_network_drg_attachment:
     region:                   "{{ region }}"
     compartment_id:           "{{ compartment_id }}"
-    display_name:             "IAD-NP-LAB04-ATTCH-02"
+    key_by:
+      - "display_name"
+    display_name:             "IAD-NP-LAB04-VCN-01-ATCH"
     drg_id:                   "{{ drg_01.drg.id }}"
     network_details:
       id:                     "{{ vcn_02.vcn.id }}"
@@ -74,6 +84,8 @@
 - name:                       "Update default security list for VCN 01"
   oracle.oci.oci_network_security_list:
     region:                   "{{ region }}"
+    key_by:
+      - "display_name"
     display_name:             "Default-Security-List-for-IAD-NP-LAB04-VCN-01"
     compartment_id:           "{{ compartment_id }}"
     vcn_id:                   "{{ vcn_01.vcn.id }}"
@@ -124,6 +136,8 @@
 - name:                       "Update default security list for VCN 02"
   oracle.oci.oci_network_security_list:
     region:                   "{{ region }}"
+    key_by:
+      - "display_name"
     display_name:             "Default-Security-List-for-IAD-NP-LAB04-VCN-01"
     compartment_id:           "{{ compartment_id }}"
     vcn_id:                   "{{ vcn_02.vcn.id }}"
@@ -174,6 +188,8 @@
 - name:                       "Create DRG Route Distribution"
   oracle.oci.oci_network_drg_route_distribution:
     region:                   "{{ region }}"
+    key_by:
+      - "display_name"
     display_name:             "IAD-NP-LAB04-RD-01"
     distribution_type:        "IMPORT"
     drg_id:                   "{{ drg_01.drg.id }}"
