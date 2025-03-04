@@ -73,7 +73,7 @@
 
 - name:                             "Update IPsec tunnel route"
   ansible.builtin.command:
-    cmd: "ip route add {{ phoenix_cidr | ansible.utils.ipsubnet(12, 0) }} nexthop dev vti1 nexthop dev vti2"
+    cmd: "ip route add {{ phoenix_cidr }} nexthop dev vti1 nexthop dev vti2"
   become:                           yes
   become_user:                      root
 ...

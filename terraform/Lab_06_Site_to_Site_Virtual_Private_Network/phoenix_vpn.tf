@@ -69,7 +69,7 @@ resource "oci_core_ipsec_connection_tunnel_management" "PHX-NP-LAB06-Tunnel-01-M
     routing                     = "STATIC"
     display_name                = "PHX-NP-LAB06-Tunnel-01"
     shared_secret               = local.vpn_1_secret
-    ike_version                 = "V1"
+    ike_version                 = "V2"
 }
 
 resource "oci_core_ipsec_connection_tunnel_management" "PHX-NP-LAB06-Tunnel-02-MGT" {
@@ -79,7 +79,7 @@ resource "oci_core_ipsec_connection_tunnel_management" "PHX-NP-LAB06-Tunnel-02-M
     routing                     = "STATIC"
     display_name                = "PHX-NP-LAB06-Tunnel-02"
     shared_secret               = local.vpn_2_secret
-    ike_version                 = "V1"
+    ike_version                 = "V2"
 }
 
 resource "oci_core_ipsec" "PHX-NP-LAB06-VPN-01" {

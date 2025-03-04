@@ -42,7 +42,7 @@ resource "oci_core_default_dhcp_options" "DHCP-Options-VCN-01" {
     provider                    = oci.phoenix
     manage_default_resource_id  = oci_core_vcn.PHX-NP-LAB06-VCN-01.default_dhcp_options_id
     compartment_id              = var.compartment_id
-    display_name                = "DHCP Options for PHX-NP-LAB06-VCN-01"
+    display_name                = "PHX-NP-LAB06-DHCP-01"
     domain_name_type            = "CUSTOM_DOMAIN"
     options {
         custom_dns_servers      = [
@@ -66,7 +66,7 @@ resource "oci_core_subnet" "PHX-NP-LAB06-SNET-01" {
     provider                    = oci.phoenix
     cidr_block                  = "172.31.0.0/24"
     compartment_id              = var.compartment_id
-    display_name                = "public subnet-PHX-NP-LAB06-VCN-01"
+    display_name                = "PHX-NP-LAB06-SNET-01"
     dns_label                   = "public"
     prohibit_internet_ingress   = "false"
     prohibit_public_ip_on_vnic  = "false"
@@ -77,7 +77,7 @@ resource "oci_core_subnet" "PHX-NP-LAB06-SNET-02" {
     provider                    = oci.phoenix
     cidr_block                  = "172.31.1.0/24"
     compartment_id              = var.compartment_id
-    display_name                = "private subnet-PHX-NP-LAB06-VCN-01"
+    display_name                = "PHX-NP-LAB06-SNET-02"
     dns_label                   = "private"
     prohibit_internet_ingress   = "true"
     prohibit_public_ip_on_vnic  = "true"
@@ -91,7 +91,7 @@ resource "oci_core_subnet" "PHX-NP-LAB06-SNET-02" {
 resource "oci_core_default_route_table" "PHX-NP-LAB06-VCN-01-default-route-table" {
     provider                    = oci.phoenix
     compartment_id              = var.compartment_id
-    display_name                = "default route table for PHX-NP-LAB06-VCN-01"
+    display_name                = "PHX-NP-LAB06-RT-01"
     route_rules {
         destination             = "0.0.0.0/0"
         destination_type        = "CIDR_BLOCK"
@@ -112,7 +112,7 @@ resource "oci_core_default_route_table" "PHX-NP-LAB06-VCN-01-default-route-table
 resource "oci_core_default_security_list" "Default-Security-List-VCN-01" {
     provider                    = oci.phoenix
     compartment_id              = var.compartment_id
-    display_name                = "Default Security List for PHX-NP-LAB06-VCN-01"
+    display_name                = "PHX-NP-LAB06-SL-01"
     egress_security_rules {
         destination             = "0.0.0.0/0"
         destination_type        = "CIDR_BLOCK"
@@ -150,7 +150,7 @@ resource "oci_core_default_security_list" "Default-Security-List-VCN-01" {
         stateless               = "false"
     }
     ingress_security_rules {
-        source                  = "172.0.0.0/16"
+        source                  = "172.31.0.0/16"
         source_type             = "CIDR_BLOCK"
         stateless               = "false"
         protocol                = "all"

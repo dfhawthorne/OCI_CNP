@@ -29,7 +29,7 @@ resource "oci_core_vcn" "IAD-NP-LAB06-OPN-01" {
 resource "oci_core_internet_gateway" "IAD-NP-LAB06-IG-01" {
     provider                    = oci.ashburn
     compartment_id              = var.compartment_id
-    display_name                = "Internet gateway-IAD-NP-LAB06-OPN-01"
+    display_name                = "IAD-NP-LAB06-IG-01"
     vcn_id                      = oci_core_vcn.IAD-NP-LAB06-OPN-01.id
 }
 
@@ -41,7 +41,7 @@ resource "oci_core_default_dhcp_options" "DHCP-Options-OPN-01" {
     provider                    = oci.ashburn
     manage_default_resource_id  = oci_core_vcn.IAD-NP-LAB06-OPN-01.default_dhcp_options_id
     compartment_id              = var.compartment_id
-    display_name                = "DHCP Options for IAD-NP-LAB06-OPN-01"
+    display_name                = "IAD-NP-LAB06-DHCP-01"
     domain_name_type            = "CUSTOM_DOMAIN"
     options {
         custom_dns_servers      = [
@@ -65,7 +65,7 @@ resource "oci_core_subnet" "IAD-NP-LAB06-SNET-01" {
     provider                    = oci.ashburn
     cidr_block                  = "192.168.20.0/25"
     compartment_id              = var.compartment_id
-    display_name                = "public subnet-IAD-NP-LAB06-OPN-01"
+    display_name                = "IAD-NP-LAB06-SNET-01"
     dns_label                   = "public"
     prohibit_internet_ingress   = "false"
     prohibit_public_ip_on_vnic  = "false"
@@ -76,7 +76,7 @@ resource "oci_core_subnet" "IAD-NP-LAB06-SNET-02" {
     provider                    = oci.ashburn
     cidr_block                  = "192.168.20.128/25"
     compartment_id              = var.compartment_id
-    display_name                = "private subnet-IAD-NP-LAB06-OPN-01"
+    display_name                = "IAD-NP-LAB06-SNET-02"
     dns_label                   = "private"
     prohibit_internet_ingress   = "true"
     prohibit_public_ip_on_vnic  = "true"
@@ -94,7 +94,7 @@ resource "oci_core_subnet" "IAD-NP-LAB06-SNET-02" {
 resource "oci_core_default_route_table" "IAD-NP-LAB06-OPN-01-default-route-table" {
     provider                    = oci.ashburn
     compartment_id              = var.compartment_id
-    display_name                = "default route table for IAD-NP-LAB06-OPN-01"
+    display_name                = "IAD-NP-LAB06-RT-01"
     route_rules {
         destination             = "0.0.0.0/0"
         destination_type        = "CIDR_BLOCK"
@@ -108,7 +108,7 @@ resource "oci_core_route_table" "IAD-NP-LAB06-SNET-02-route-table" {
     compartment_id              = var.compartment_id
     display_name                = "IAD-NP-LAB06-SNET-02-route-table"
     route_rules {
-        destination             = "172.16.0.0/12"
+        destination             = "172.31.0.0/16"
         destination_type        = "CIDR_BLOCK"
         network_entity_id       = data.oci_core_private_ips.IAD-NP-LAB06-VMCPE-Private-IP.private_ips[0].id
     }
@@ -122,7 +122,7 @@ resource "oci_core_route_table" "IAD-NP-LAB06-SNET-02-route-table" {
 resource "oci_core_default_security_list" "Default-Security-List-OPN-01" {
     provider                    = oci.ashburn
     compartment_id              = var.compartment_id
-    display_name                = "Default Security List for IAD-NP-LAB06-OPN-01"
+    display_name                = "IAD-NP-LAB06-SL-01"
     egress_security_rules {
         destination             = "0.0.0.0/0"
         destination_type        = "CIDR_BLOCK"
@@ -160,11 +160,12 @@ resource "oci_core_default_security_list" "Default-Security-List-OPN-01" {
         stateless               = "false"
     }
     ingress_security_rules {
+        description             = "Allow all PINGs from Phoenix VCN"
         icmp_options {
             code                = "-1"
             type                = "8"
         }
-        source                  = "172.16.0.0/12"
+        source                  = "172.31.0.0/16"
         source_type             = "CIDR_BLOCK"
         stateless               = "false"
         protocol                = "1"
@@ -182,7 +183,7 @@ resource "oci_core_security_list" "Private-Security-List-OPN-01" {
             code                = "-1"
             type                = "8"
         }
-        source                  = "172.16.0.0/12"
+        source                  = "172.31.0.0/16"
         source_type             = "CIDR_BLOCK"
         stateless               = "false"
         protocol                = "1"

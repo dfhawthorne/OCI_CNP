@@ -11,7 +11,7 @@
 # ------------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
-# Get Availability Domains, and OL8 Images
+# Get Availability Domains, and OL9 Images
 # ------------------------------------------------------------------------------
 
 data "oci_identity_availability_domains" "iad_ads" {
@@ -19,11 +19,11 @@ data "oci_identity_availability_domains" "iad_ads" {
     compartment_id              = var.provider_details.tenancy_ocid
 }
 
-data "oci_core_images" "iad_ol8_images" {
+data "oci_core_images" "iad_ol9_images" {
     provider                    = oci.ashburn
     compartment_id              = var.compartment_id
     operating_system            = "Oracle Linux"
-    operating_system_version    = "8"
+    operating_system_version    = "9"
     shape                       = "VM.Standard.A1.Flex"
     sort_by                     = "TIMECREATED"
     sort_order                  = "DESC"
@@ -31,16 +31,7 @@ data "oci_core_images" "iad_ol8_images" {
 
 locals {
     iad_ad1                     = data.oci_identity_availability_domains.iad_ads.availability_domains[0].name
-    latest_iad_ol8_image_id     = data.oci_core_images.iad_ol8_images.images[0].id
-}
-
-# ------------------------------------------------------------------------------
-# Generate SSH Key Pair 
-# ------------------------------------------------------------------------------
-
-resource "tls_private_key" "ocinplab06cpekey" {
-    algorithm                   = "RSA"
-    rsa_bits                    = 2048
+    latest_iad_ol9_image_id     = data.oci_core_images.iad_ol9_images.images[0].id
 }
 
 # -----------------------------------------------------------------------------
@@ -62,7 +53,8 @@ resource "oci_core_instance" "IAD-NP-LAB06-VMCPE-01" {
 
     source_details {
         source_type             = "image"
-        source_id               = local.latest_iad_ol8_image_id
+        source_id               = local.latest_iad_ol9_image_id
+        boot_volume_size_in_gbs = 50
     }
 
     shape_config                {
@@ -71,7 +63,7 @@ resource "oci_core_instance" "IAD-NP-LAB06-VMCPE-01" {
     }
 
     metadata = {
-        ssh_authorized_keys     = tls_private_key.ocinplab06cpekey.public_key_openssh
+        ssh_authorized_keys     = file("~/.ssh/id_rsa.pub")
     }
 }
 
@@ -112,7 +104,8 @@ resource "oci_core_instance" "IAD-NP-LAB06-PingVM-01" {
 
     source_details {
         source_type             = "image"
-        source_id               = local.latest_iad_ol8_image_id
+        source_id               = local.latest_iad_ol9_image_id
+        boot_volume_size_in_gbs = 50
     }
 
     shape_config                {

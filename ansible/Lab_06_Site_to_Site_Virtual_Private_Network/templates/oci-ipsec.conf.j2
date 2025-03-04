@@ -9,7 +9,7 @@ conn oracle-tunnel-1
     mark=5/0xffffffff
     vti-interface=vti1
     vti-routing=no
-    ikev2=no
+    ikev2=yes
     ike=aes_cbc256-sha2_384;modp1536
     phase2alg=aes_gcm256;modp1536
     encapsulation=yes
@@ -26,7 +26,7 @@ conn oracle-tunnel-2
     mark=6/0xffffffff
     vti-interface=vti2
     vti-routing=no
-    ikev2=no
+    ikev2=yes
     ike=aes_cbc256-sha2_384;modp1536
     phase2alg=aes_gcm256;modp1536
     encapsulation=yes

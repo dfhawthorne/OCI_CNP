@@ -75,11 +75,11 @@
     dhcp_id:                  "{{ iad_np_lab06_opn_01.vcn.default_dhcp_options_id }}"
     display_name:             "IAD-NP-LAB06-DHCP-01"
     options:
-      - type:                 "DomainNameServer"
-        server_type:          "VcnLocalPlusInternet"
       - type:                 "SearchDomain"
         search_domain_names:
           - "iadnplab06vcn01.oraclevcn.com"
+      - type:                 "DomainNameServer"
+        server_type:          "VcnLocalPlusInternet"
     state:                    "present"
   register:                   iad_np_lab06_dhcp_01
 

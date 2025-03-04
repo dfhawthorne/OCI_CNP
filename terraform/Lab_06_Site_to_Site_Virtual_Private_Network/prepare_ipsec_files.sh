@@ -79,7 +79,7 @@ conn oracle-tunnel-${intf}
     mark=${mark}
     vti-interface=vti${intf}
     vti-routing=no
-    ikev2=no
+    ikev2=yes
     ike=aes_cbc256-sha2_384;modp1536
     phase2alg=aes_gcm256;modp1536
     encapsulation=yes

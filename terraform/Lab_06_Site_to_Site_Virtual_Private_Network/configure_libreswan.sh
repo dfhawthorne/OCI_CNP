@@ -8,13 +8,6 @@
 # Download LibreSwan and configure IPSec files
 # ------------------------------------------------------------------------------
 
-mkdir -p .ssh
-chmod 700 .ssh
-sed -nre '/^---/,/^---/p' \
-    <(terraform output -raw private_key_pem) \
-    >.ssh/id_pem
-chmod 600 .ssh/id_pem
-
 cpe_ip_addr=$(terraform output -raw cpe_public_ip)
 
 # ------------------------------------------------------------------------------
@@ -23,7 +16,6 @@ cpe_ip_addr=$(terraform output -raw cpe_public_ip)
 
 sftp \
     -b - \
-    -i .ssh/id_pem \
     -o StrictHostKeyChecking=accept-new \
     opc@${cpe_ip_addr} <<DONE
 put oci-ipsec.conf
@@ -36,8 +28,7 @@ DONE
 # Update system configuration
 # ------------------------------------------------------------------------------
 
-ssh -i .ssh/id_pem \
-    opc@${cpe_ip_addr} <<DONE
+ssh opc@${cpe_ip_addr} <<DONE
 sudo yum -y install libreswan
 grep -qf sysctl.conf /etc/sysctl.conf || \
     sudo sed -i -e '\$r sysctl.conf' /etc/sysctl.conf

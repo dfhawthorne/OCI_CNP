@@ -31,10 +31,10 @@
     static_routes:                  "{{ ashburn_cidr }}"
     tunnel_configuration:
       - display_name:               "PHX-NP-LAB06-Tunnel-01"
-        ike_version:                "V1"
+        ike_version:                "V2"
         routing:                    "STATIC"
       - display_name:               "PHX-NP-LAB06-Tunnel-02"
-        ike_version:                "V1"
+        ike_version:                "V2"
         routing:                    "STATIC"
   register:                         phx_np_lab06_vpn_01
 
