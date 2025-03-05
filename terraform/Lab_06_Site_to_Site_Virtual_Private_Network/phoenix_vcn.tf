@@ -52,7 +52,7 @@ resource "oci_core_default_dhcp_options" "DHCP-Options-VCN-01" {
     }
     options {
         search_domain_names     = [
-            "phxlab06vcn01.oraclevcn.com",
+            "phxnplab06vcn01.oraclevcn.com",
         ]
         type = "SearchDomain"
     }
@@ -161,7 +161,7 @@ resource "oci_core_default_security_list" "Default-Security-List-VCN-01" {
             type                = "8"
         }
         protocol                = "1"
-        source                  = "192.168.0.0/16"
+        source                  = "192.168.20.0/24"
         source_type             = "CIDR_BLOCK"
         stateless               = "false"
     }

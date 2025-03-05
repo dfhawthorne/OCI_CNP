@@ -24,6 +24,7 @@
         -                         "ashburn_compute.yml"
         -                         "phoenix_cpe.yml"
         -                         "phoenix_vcn.yml"
+        -                         "phoenix_compute.yml"
         -                         "connectivity.yml"
       loop_control:
         loop_var:                 task_file
@@ -49,8 +50,12 @@
         - name:                   iad_np_lab06_vmcpe_01
           group:                  cpe
           ip_addr:                "{{ cpe_public_ip }}"
+        - name:                   iad_np_lab06_pingvm_01
+          group:                  testvm
+          ip_addr:                "{{ testvm_public_ip }}"
       loop_control:
         loop_var:                 host_entry
+      changed_when:               false
 
 - name:                           "Configure CPE VM"
   hosts:                          cpe
@@ -59,4 +64,20 @@
     - name:                       "Include Tasks to Create VCNs and connect them"
       ansible.builtin.include_tasks:
         file:                     "configure_cpe_vm.yml"
+
+- name:                           "Validate Set-Up"
+  hosts:                          testvm
+  gather_facts:                   no
+  tasks:
+    - name:                       "Ping PINGVM in Ashburn from Phoenix"
+      ansible.builtin.command:
+        cmd:                      "ping -c 10 {{ ping_private_ip }}"
+      register:                   ping_results
+      changed_when:               false
+    
+    - name:                       "Display Test Results"
+      ansible.builtin.debug:
+        var:                      ping_results.stdout_lines
+      when:
+        - ping_results.stdout_lines is defined
 ...

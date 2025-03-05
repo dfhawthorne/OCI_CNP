@@ -45,6 +45,7 @@
     loop_var:                       sysctl
   become:                           yes
   become_user:                      root
+  register:                         upd_vnic
 
 - name:                             "Save the IPSec information"
   ansible.builtin.template:
@@ -52,6 +53,7 @@
     src:                            "oci-ipsec.conf.j2"
   become:                           yes
   become_user:                      root
+  register:                         save_ipsec_info
 
 - name:                             "Save the shared secrets information"
   ansible.builtin.template:
@@ -59,6 +61,7 @@
     src:                            "oci-ipsec.secrets.j2"
   become:                           yes
   become_user:                      root
+  register:                         save_shr_secrets
 
 - name:                             "Restart IPSec Service"
   ansible.builtin.service:
@@ -66,14 +69,25 @@
     state:                          restarted
   become:                           yes
   become_user:                      root
+  register:                         restart_ipsec
+  when:                             upd_vnic.changed or save_ipsec_info.changed or save_shr_secrets.changed
 
 - name:                             "Wait for IPSec Service Stability"
   ansible.builtin.pause:
     seconds:                        10
+  when:
+    - restart_ipsec is defined
+    - restart_ipsec.changed
 
 - name:                             "Update IPsec tunnel route"
   ansible.builtin.command:
     cmd: "ip route add {{ phoenix_cidr }} nexthop dev vti1 nexthop dev vti2"
   become:                           yes
   become_user:                      root
+  register:                         upd_ipsec_tunnel_rte
+  changed_when:
+    - upd_ipsec_tunnel_rte.stderr is not search("File exists")
+  failed_when:
+    - upd_ipsec_tunnel_rte.rc > 0
+    - upd_ipsec_tunnel_rte.stderr is not search("File exists")
 ...

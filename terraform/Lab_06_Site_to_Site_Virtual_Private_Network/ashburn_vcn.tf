@@ -51,7 +51,7 @@ resource "oci_core_default_dhcp_options" "DHCP-Options-OPN-01" {
     }
     options {
         search_domain_names     = [
-            "iadlab06opn01.oraclevcn.com",
+            "iadnplab06opn01.oraclevcn.com",
         ]
         type = "SearchDomain"
     }

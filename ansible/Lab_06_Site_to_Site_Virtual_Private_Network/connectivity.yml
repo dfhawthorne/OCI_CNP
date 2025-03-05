@@ -74,33 +74,4 @@
     shared_secret:                  "{{ vpn_2_secret }}"
     state:                          "present"
     tunnel_id:                      "{{ phoenix_ipsec_tunnel_info.ip_sec_connection_tunnels[1].id }}"
-
-- name:                             "Route all traffic to Phoenix via the CPE"
-  oracle.oci.oci_network_route_table:
-    region:                         "us-ashburn-1"
-    compartment_id:                 "{{ compartment_id }}"
-    key_by:
-      - "display_name"
-    display_name:                   "IAD-NP-LAB06-RT-02"
-    route_rules:
-      - destination:                "{{ phoenix_cidr }}"
-        destination_type:           "CIDR_BLOCK"
-        network_entity_id:          "{{ iad_np_lab06_vmcpe_01.instance.primary_private_ip }}"
-    state:                          "present"
-    vcn_id:                         "{{ iad_np_lab06_opn_01.vcn.id }}"
-  register:                         iad_np_lab06_rt_02
-  when:
-    - 0 == 1
-  
-- name:                           "Update Ashburn Private Subnet"
-  oracle.oci.oci_network_subnet:
-    region:                       "us-ashburn-1"
-    compartment_id:               "{{ compartment_id }}"
-    key_by:
-      - "display_name"
-    display_name:                 "IAD-NP-LAB06-SNET-02"
-    route_table_id:               "{{ iad_np_lab06_rt_02.route_table.id }}"
-  register:                       iad_np_lab06_snet_02
-  when:
-    - 0 == 1
 ...

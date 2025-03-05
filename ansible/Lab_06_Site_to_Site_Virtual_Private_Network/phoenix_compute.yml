@@ -1,0 +1,83 @@
+---
+# ------------------------------------------------------------------------------
+# Lab 06:
+# Site-to-Site Virtual Private Network: Connect OCI resources to on-premises via
+# site-to-site VPN, using LibreSwan as the customer premises equipment
+# 
+# Launch Cloud VM in Phoenix Region
+#
+# In this practice, you will simulate an on-premises network (OPN) in the phoenix
+# region with a VCN, and a compute instance that will run LibreSwan for the CPE
+# router. There will be a second VM for pinging purposes.
+# ------------------------------------------------------------------------------
+
+- name:                             "Get Availability Domains"
+  oracle.oci.oci_identity_availability_domain_facts:
+    region:                         "us-phoenix-1"
+    compartment_id:                 "{{ compartment_id }}"
+  register:                         phoenix_ads
+
+- name:                             "Get Available Compute Images"
+  oracle.oci.oci_compute_image_facts:
+    region:                         "us-phoenix-1"
+    compartment_id:                 "{{ compartment_id }}"
+    operating_system:               "Oracle Linux"
+    operating_system_version:       "9"
+    shape:                          "{{ shape_name }}"
+    sort_by:                        "TIMECREATED"
+    sort_order:                     "DESC"
+  register:                         phoenix_images
+
+- name:                             "Find Compatible Shapes"
+  oracle.oci.oci_compute_image_shape_compatibility_entry_facts:
+    region:                         "us-phoenix-1"
+    image_id:                       "{{ phoenix_images.images[0].id }}"
+    shape_name:                     "{{ shape_name }}"
+  register:                         phoenix_shapes
+
+- name:                             "Ensure Compute Shape is compatible with selected image"
+  ansible.builtin.assert:
+    that:
+      - phoenix_shapes.image_shape_compatibility_entries | length > 0
+    fail_msg:                       "No compatible Compute Image found for {{ shape_name }}"
+
+- name:                             "Create Test VM in First Availability Domain"
+  oracle.oci.oci_compute_instance:
+    region:                         "us-phoenix-1"
+    compartment_id:                 "{{ compartment_id }}"
+    key_by:
+      - "display_name"
+    availability_domain:            "{{ phoenix_ads.availability_domains[0].name }}"
+    create_vnic_details:
+      assign_public_ip:             true
+      subnet_id:                    "{{ iad_np_lab06_snet_01.subnet.id }}"
+      skip_source_dest_check:       true
+    shape:                          "{{ shape_name }}"
+    source_details:
+      source_type:                  "image"
+      image_id:                     "{{ phoenix_images.images[0].id }}"
+    display_name:                   "PHX-NP-LAB06-VM-01"
+    metadata:
+      ssh_authorized_keys:          "{{ lookup('file', '{{ ansible_env.HOME }}/.ssh/id_rsa.pub') }}"
+    shape_config:
+      ocpus:                        1
+      memory_in_gbs:                6
+    state:                          "present"
+  register:                         phx_np_lab06_vm_01
+
+- name:                             "Display Test VM Configuration"
+  ansible.builtin.debug:
+    var:                            phx_np_lab06_vm_01.instance
+    verbosity:                      1
+  when:
+    - phx_np_lab06_vm_01.instance is defined
+
+# -----------------------------------------------------------------------------
+# Extract Public IP Addresses for VM Instances
+# -----------------------------------------------------------------------------
+
+- name:                             "Retrieve Phoenix VM Facts"
+  ansible.builtin.set_fact:
+    testvm_public_ip:               "{{ phx_np_lab06_vm_01.instance.primary_public_ip }}"
+    testvm_private_ip:              "{{ phx_np_lab06_vm_01.instance.primary_private_ip }}"
+...
