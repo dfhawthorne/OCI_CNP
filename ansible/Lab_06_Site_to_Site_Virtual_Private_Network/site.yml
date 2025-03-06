@@ -50,7 +50,7 @@
         - name:                   iad_np_lab06_vmcpe_01
           group:                  cpe
           ip_addr:                "{{ cpe_public_ip }}"
-        - name:                   iad_np_lab06_pingvm_01
+        - name:                   phx_np_lab06_vm_01
           group:                  testvm
           ip_addr:                "{{ testvm_public_ip }}"
       loop_control:

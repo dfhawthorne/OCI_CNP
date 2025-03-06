@@ -70,7 +70,7 @@
   become:                           yes
   become_user:                      root
   register:                         restart_ipsec
-  when:                             upd_vnic.changed or save_ipsec_info.changed or save_shr_secrets.changed
+#  when:                             upd_vnic.changed or save_ipsec_info.changed or save_shr_secrets.changed
 
 - name:                             "Wait for IPSec Service Stability"
   ansible.builtin.pause:
