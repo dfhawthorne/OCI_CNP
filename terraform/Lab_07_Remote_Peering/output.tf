@@ -5,16 +5,6 @@
 # Output variables
 # ------------------------------------------------------------------------------
 
-output "private_key_pem" {
-    value                       = tls_private_key.ocinplab06cpekey.private_key_pem
-    sensitive                   = true
-}
-
-output "public_key_pem" {
-    value                       = tls_private_key.ocinplab06cpekey.public_key_pem
-    sensitive                   = false
-}
-
 output "cpe_public_ip" {
     value                       = oci_core_instance.IAD-NP-LAB06-VMCPE-01.public_ip
     sensitive                   = false
@@ -37,16 +27,6 @@ output "phx_vm_01_public_ip" {
 
 output "phx_vm_01_private_ip" {
     value                       = oci_core_instance.PHX-NP-LAB06-VM-01.private_ip
-    sensitive                   = false
-}
-
-output "lhr_private_key_pem" {
-    value                       = tls_private_key.ocinplab07vmkey.private_key_pem
-    sensitive                   = true
-}
-
-output "lhr_public_key_pem" {
-    value                       = tls_private_key.ocinplab07vmkey.public_key_pem
     sensitive                   = false
 }
 

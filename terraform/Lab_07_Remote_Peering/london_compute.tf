@@ -7,7 +7,7 @@
 # ------------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
-# Get Availability Domains, and OL8 Images
+# Get Availability Domains, and ol9 Images
 # ------------------------------------------------------------------------------
 
 data "oci_identity_availability_domains" "lhr_ads" {
@@ -15,11 +15,11 @@ data "oci_identity_availability_domains" "lhr_ads" {
     compartment_id              = var.provider_details.tenancy_ocid
 }
 
-data "oci_core_images" "lhr_ol8_images" {
+data "oci_core_images" "lhr_ol9_images" {
     provider                    = oci.london
     compartment_id              = var.compartment_id
     operating_system            = "Oracle Linux"
-    operating_system_version    = "8"
+    operating_system_version    = "9"
     shape                       = "VM.Standard.A1.Flex"
     sort_by                     = "TIMECREATED"
     sort_order                  = "DESC"
@@ -27,16 +27,7 @@ data "oci_core_images" "lhr_ol8_images" {
 
 locals {
     lhr_ad1                     = data.oci_identity_availability_domains.lhr_ads.availability_domains[0].name
-    latest_lhr_ol8_image_id     = data.oci_core_images.lhr_ol8_images.images[0].id
-}
-
-# ------------------------------------------------------------------------------
-# Generate SSH Key Pair 
-# ------------------------------------------------------------------------------
-
-resource "tls_private_key" "ocinplab07vmkey" {
-    algorithm                   = "RSA"
-    rsa_bits                    = 2048
+    latest_lhr_ol9_image_id     = data.oci_core_images.lhr_ol9_images.images[0].id
 }
 
 # -----------------------------------------------------------------------------
@@ -48,6 +39,7 @@ resource "oci_core_instance" "LHR-NP-LAB07-VM-01" {
     availability_domain         = local.lhr_ad1
     compartment_id              = var.compartment_id
     shape                       = "VM.Standard.A1.Flex"
+    display_name                = "LHR-NP-LAB07-VM-01"
 
     create_vnic_details {
         subnet_id               = oci_core_subnet.LHR-NP-LAB07-SNET-01.id
@@ -57,7 +49,8 @@ resource "oci_core_instance" "LHR-NP-LAB07-VM-01" {
 
     source_details {
         source_type             = "image"
-        source_id               = local.latest_lhr_ol8_image_id
+        source_id               = local.latest_lhr_ol9_image_id
+        boot_volume_size_in_gbs = 50
     }
 
     shape_config                {
@@ -66,6 +59,6 @@ resource "oci_core_instance" "LHR-NP-LAB07-VM-01" {
     }
 
     metadata = {
-        ssh_authorized_keys     = tls_private_key.ocinplab07vmkey.public_key_openssh
+        ssh_authorized_keys     = file("~/.ssh/id_rsa.pub")
     }
 }
