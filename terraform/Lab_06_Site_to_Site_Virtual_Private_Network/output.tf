@@ -21,7 +21,7 @@ output "pingvm_private_ip" {
     sensitive                   = false
 }
 
-output "testvm_public_ip" {
+output "phx_vm_01_public_ip" {
     value                       = oci_core_instance.PHX-NP-LAB06-VM-01.public_ip
     sensitive                   = false
 }

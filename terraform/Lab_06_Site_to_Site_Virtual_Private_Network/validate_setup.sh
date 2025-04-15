@@ -9,13 +9,13 @@
 # ------------------------------------------------------------------------------
 
 pingvm_private_ip=$(terraform output -raw pingvm_private_ip)
-testvm_public_ip=$(terraform output -raw testvm_public_ip)
+phx_vm_01_public_ip=$(terraform output -raw phx_vm_01_public_ip)
 
 # ------------------------------------------------------------------------------
 # Ping the host on the private subnet on the simulated on-premises environment
 # ------------------------------------------------------------------------------
 
 ssh -o StrictHostKeyChecking=accept-new \
-    opc@${testvm_public_ip} <<DONE
+    opc@${phx_vm_01_public_ip} <<DONE
 ping -c 10 ${pingvm_private_ip}
 DONE

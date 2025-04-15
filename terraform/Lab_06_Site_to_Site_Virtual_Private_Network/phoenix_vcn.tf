@@ -52,7 +52,7 @@ resource "oci_core_default_dhcp_options" "DHCP-Options-VCN-01" {
     }
     options {
         search_domain_names     = [
-            "phxnplab06vcn01.oraclevcn.com",
+            "phxlab06vcn01.oraclevcn.com",
         ]
         type = "SearchDomain"
     }
@@ -109,7 +109,7 @@ resource "oci_core_default_route_table" "PHX-NP-LAB06-VCN-01-default-route-table
 # Security lists (aka Firewall Rules)
 # ------------------------------------------------------------------------------
 
-resource "oci_core_default_security_list" "Default-Security-List-VCN-01" {
+resource "oci_core_default_security_list" "PHX_Default-Security-List-VCN-01" {
     provider                    = oci.phoenix
     compartment_id              = var.compartment_id
     display_name                = "PHX-NP-LAB06-SL-01"
