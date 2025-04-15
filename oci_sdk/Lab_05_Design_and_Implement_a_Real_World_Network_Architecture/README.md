@@ -1,0 +1,1 @@
+../../terraform/Lab_05_Design_and_Implement_a_Real_World_Network_Architecture/README.md

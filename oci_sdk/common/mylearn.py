@@ -6,6 +6,7 @@ Wrapper module for executing MyLearn labs.
 import netaddr.ip
 import oci
 import os.path
+import paramiko
 import time
 
 # ------------------------------------------------------------------------------
@@ -101,7 +102,7 @@ class availability_domain:
         global compartment_id
         global oci_config
 
-        if oci_config == None:
+        if oci_config is None:
             load_oci_config()
         config = dict(oci_config)
         if 'region' in kwargs.keys():
@@ -139,7 +140,7 @@ class drg:
         global compartment_id
         global oci_config
 
-        if oci_config == None:
+        if oci_config is None:
             load_oci_config()
         config = dict(oci_config)
         if 'region' in kwargs.keys():
@@ -364,6 +365,127 @@ class drg:
             )
 
 # -------------------------------------------------------------------------------
+# DNS
+# -------------------------------------------------------------------------------
+
+class dns_zone:
+    """Domain Name System (DNS)"""
+
+    def __init__(self, vcn, zone_name, **kwargs):
+        """Create a Domain Name System (DNS) object with the <zone_name>.
+        
+        The required parameter are:
+          vcn:
+            The VCN object to attach the DNS zone to.
+          zone_name:
+            This name is used to detect if the DNS zone has been created already.
+            If so, the DNS zone details are used to populate the instance.
+        
+        The optional parameters are:
+          compartment_id:
+            The OCID of the OCI compartment where to create the VCN. The
+            default value is obtained from the OCI CLI configuration file, if
+            present.
+          region:
+            The OCI region name. The default value is obtained from the OCI
+            configuration file.
+          scope:
+            Whether the DNS zone is 'PUBLIC' or 'PRIVATE'. Default value is
+            'PRIVATE'."""
+
+        global oci_config
+        global compartment_id
+
+        assert type(vcn).__name__ == 'Vcn', \
+            'VCN object expected'
+        assert type(zone_name) == str and len(zone_name) > 0, \
+            'Zone name must be a string'
+
+        if oci_config is None:
+            load_oci_config()
+        config = dict(oci_config)
+        if 'region' in kwargs.keys():
+            config['region'] = kwargs['region']
+            oci.config.validate_config(config)
+        self.dns_client = oci.dns.DnsClient(config)
+
+        response = self.dns_client.list_views(
+            kwargs.get('compartment_id',compartment_id),
+            display_name=vcn.display_name,
+            scope=kwargs.get('scope','PRIVATE'),
+            sort_order='DESC',
+            sort_by='timeCreated'
+            )
+        if len(response.data) == 0:
+            raise Exception(f"No default DNS view found for VCN '{vcn.display_name}'")
+        self.view = response.data[0]
+        response = self.dns_client.list_zones(
+            compartment_id=kwargs.get('compartment_id',compartment_id),
+            name=zone_name,
+            zone_type=kwargs.get('zone_type','PRIMARY'),
+            scope=kwargs.get('scope','PRIVATE'),
+            view_id=self.view.id
+            )
+        if len(response.data) > 0:
+            self.zone = response.data[0]
+        else:
+            response = self.dns_client.create_zone(
+                oci.dns.models.CreateZoneDetails(
+                    name=zone_name,
+                    zone_type=kwargs.get('zone_type','PRIMARY'),
+                    compartment_id=kwargs.get('compartment_id',compartment_id),
+                    migration_source=oci.dns.models.CreateZoneBaseDetails.MIGRATION_SOURCE_NONE,
+                    scope=kwargs.get('scope','PRIVATE'),
+                    view_id=self.view.id
+                    ),
+                scope=kwargs.get('scope','PRIVATE')
+                )
+            self.zone = response.data
+
+    def add_dns_record(self, **kwargs):
+        """Adds a DNS record.
+        
+        Optional parameters:
+          address:
+            IP address to resolve name to.
+          name:
+            Name of DNS entry.
+          ttl:
+            Time to live for DNS entry.
+          type:
+            Type of DNS entry."""
+        
+        response = self.dns_client.get_zone_records(
+            self.zone.id,
+            rtype=kwargs.get('type','A'),
+            compartment_id=kwargs.get('compartment_id',compartment_id),
+            scope=kwargs.get('scope','PRIVATE'),
+            view_id=self.view.id,
+            domain=kwargs.get('name')
+            )
+        if response.data.items is not None and len(response.data.items) > 0:
+            self.domain = response.data
+            items = response.data.items
+        else:
+            items = list()
+        new_item = oci.dns.models.RecordDetails(
+            domain=kwargs.get('name'),
+            rdata=kwargs.get('address'),
+            rtype=kwargs.get('type','A'),
+            ttl=kwargs.get('ttl')
+            )
+        if new_item not in items:
+            items.append(new_item)
+            update_zone_records_details = oci.dns.models.UpdateZoneRecordsDetails(
+                items=items
+                )
+            response = self.dns_client.update_zone_records(
+                self.zone.id,
+                update_zone_records_details, 
+                scope=kwargs.get('scope','PRIVATE'),
+                view_id=self.view.id
+                )
+# -------------------------------------------------------------------------------
 # Virtual Cloud Network (VCN)
 # -------------------------------------------------------------------------------
 
@@ -398,10 +520,10 @@ class vcn:
         global compartment_id
         global oci_config
 
-        if oci_config == None:
+        if oci_config is None:
             load_oci_config()
         config = dict(oci_config)
-        if 'region' in kwargs.keys():
+        if kwargs.get('region') is not None:
             config['region'] = kwargs['region']
             oci.config.validate_config(config)
         self.nw_client = oci.core.VirtualNetworkClient(config)
@@ -708,7 +830,6 @@ class vcn:
                     peer_id=lpg_id
                     )
                 )
-            print(response)
             response = self.nw_client.get_local_peering_gateway(self.lpg.id)
             self.lpg = response.data
         
@@ -848,7 +969,7 @@ class vcn:
         ingress_rules = response.data.ingress_security_rules
         protocol = kwargs.get('protocol','ICMP')
         if   protocol == "ICMP":
-            if kwargs.get('code'):
+            if kwargs.get('code') is not None:
                 icmp_options = oci.core.models.IcmpOptions(
                     code=kwargs.get('code'),
                     type=kwargs.get('type')
@@ -871,14 +992,14 @@ class vcn:
         elif protocol == "TCP":
             dest_ports = kwargs.get('dest_ports')
             src_ports  = kwargs.get('src_ports')
-            if dest_ports:
+            if dest_ports is not None:
                 destination_port_range=oci.core.models.PortRange(
                     min=dest_ports[0],
                     max=dest_ports[1]
                     )
             else:
                 destination_port_range=None
-            if src_ports:
+            if src_ports is not None:
                 source_port_range=oci.core.models.PortRange(
                     min=src_ports[0],
                     max=src_ports[1]
@@ -902,14 +1023,14 @@ class vcn:
         elif protocol == "UDP":
             dest_ports = kwargs.get('dest_ports')
             src_ports  = kwargs.get('src_ports')
-            if dest_ports:
+            if dest_ports is not None:
                 destination_port_range=oci.core.models.PortRange(
                     min=dest_ports[0],
                     max=dest_ports[1]
                     )
             else:
                 destination_port_range=None
-            if src_ports:
+            if src_ports is not None:
                 source_port_range=oci.core.models.PortRange(
                     min=src_ports[0],
                     max=src_ports[1]
@@ -931,7 +1052,7 @@ class vcn:
                 description=kwargs.get('description')
                 )
         elif protocol == "ICMPv6":
-            if kwargs.get('type'):
+            if kwargs.get('type') is not None:
                 icmp_options = oci.core.models.IcmpOptions(
                     code=kwargs.get('code'),
                     type=kwargs.get('type')
@@ -1095,7 +1216,7 @@ class vcn:
             elif self.sg is not None and rule.network_entity_id == self.sg.id:
                 result += f"Service Gateway ('{self.sg.display_name}') "
             result += rule.route_type + ' '
-            if rule.description:
+            if rule.description is not None:
                 result += rule.description
             result += '\n'
         return result
@@ -1176,6 +1297,61 @@ class vcn_wizard(vcn):
                 )
 
 # ------------------------------------------------------------------------------
+# Network Security Group (NSG) Class
+# ------------------------------------------------------------------------------
+
+class nsg:
+    """Creates and manages NSG class"""
+
+    def __init__(self, display_name, **kwargs):
+        """Create a NSG with the required display name.
+        
+        The only required parameter is <display_name>. This name is used to
+        detect if the NSG has been created already. If so, the NSG details are
+        used to populate the instance.
+        
+        The optional parameters are:
+          compartment_id:
+            The OCID of the OCI compartment where to create the VCN. The
+            default value is obtained from the OCI CLI configuration file, if
+            present.
+          region:
+            The OCI region name. The default value is obtained from the OCI
+            configuration file.
+          vcn_id:
+            OCID for VCN."""
+
+        global compartment_id
+        global oci_config
+
+        if oci_config is None:
+            load_oci_config()
+        config = dict(oci_config)
+        if kwargs.get('region') is not None:
+            config['region'] = kwargs['region']
+            oci.config.validate_config(config)
+        self.nw_client = oci.core.VirtualNetworkClient(config)
+        response = self.nw_client.list_network_security_groups(
+            compartment_id=kwargs.get('compartment_id',compartment_id),
+            display_name=display_name,
+            vcn_id=kwargs.get('vcn_id')
+            )
+        if len(response.data) > 0:
+            self.nsg = response.data[0]
+        else:
+            response = self.nw_client.create_network_security_group(
+                oci.core.models.CreateNetworkSecurityGroupDetails(
+                    compartment_id=kwargs.get('compartment_id',compartment_id),
+                    display_name=display_name,
+                    vcn_id=kwargs.get('vcn_id')
+                    )
+                )
+            self.nsg = response.data
+    
+    def add_nsg_rule_action(self,**kwargs):
+        """"""
+
+# ------------------------------------------------------------------------------
 # Class for launching COMPUTE instances
 # ------------------------------------------------------------------------------
 
@@ -1227,7 +1403,7 @@ class compute:
         global oci_config
         global sleep_time
 
-        if oci_config == None:
+        if oci_config is None:
             load_oci_config()
         config = dict(oci_config)
         if 'region' in kwargs.keys():
@@ -1269,8 +1445,12 @@ class compute:
                 metadata = None
             if 'subnet' in kwargs.keys():
                 subnet = kwargs['subnet']
+                if subnet.ipv6_cidr_blocks is not None:
+                    assign_ipv6_ip = (len(subnet.ipv6_cidr_blocks) > 0)
+                else:
+                    assign_ipv6_ip = False
                 create_vnic_details = oci.core.models.CreateVnicDetails(
-                    assign_ipv6_ip=(len(subnet.ipv6_cidr_blocks) > 0),
+                    assign_ipv6_ip=assign_ipv6_ip,
                     assign_public_ip=(not subnet.prohibit_public_ip_on_vnic),
                     subnet_id=subnet.id
                     )
@@ -1309,3 +1489,54 @@ class compute:
                 self.network_client.get_vnic(vnic.vnic_id).data
             )
     
+    def run_ssh_commands(self,**kwargs):
+        """Runs one or more commands over SSH link to the COMPUTE instance.
+        
+        Optional parameters:
+          cmds:
+            A list of commands to run. The default to run 'uptime'.
+          ssh_private_key:
+            Location of SSH private key file. The default is to use the
+            previous value used.
+        """
+
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # Connect using the private key
+        if self.private_key is None:
+            self.private_key = paramiko.RSAKey.from_private_key_file(
+                os.path.expanduser(
+                    kwargs.get('ssh_private_key')
+                    )
+                )
+
+        ssh_client.connect(
+            hostname=self.vnics[0].public_ip,
+            username="opc",
+            pkey=self.private_key
+            )
+
+        cmds = kwargs.get('cmds',['uptime'])
+        for command in cmds:
+            stdin, stdout, stderr = ssh_client.exec_command(command)
+                
+            # Wait for the command to complete
+            while not stdout.channel.exit_status_ready():
+                time.sleep(0.1)
+            
+            # Read the output
+            stdout_output = stdout.read().decode('utf-8')
+            stderr_output = stderr.read().decode('utf-8')
+            
+            # Print the results
+            print("\nStandard Output:")
+            print(stdout_output)
+            
+            print("\nStandard Error:")
+            print(stderr_output)
+            
+            # Get the exit status
+            exit_status = stdout.channel.recv_exit_status()
+
+        ssh_client.close()
